@@ -27,7 +27,6 @@ public class PSI_UITaskbar : MonoBehaviour {
         if(!WindowPrefab || !TaskbarButtonPrefab | !WindowParent)
             Debug.LogError("Taskbar variables missing!");
 
-        var canvas = FindObjectOfType<Canvas>();
         for(int i = 0; i < WindowsToCreate.Count; i++)
         {
             var windowTitle = WindowsToCreate[i];
