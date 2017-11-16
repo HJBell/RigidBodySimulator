@@ -59,7 +59,12 @@ public class PSI_DebugManager : MonoBehaviour {
 
     private void UpdateWindowContent()
     {
+        var settingsWindow = mTaskbar.GetWindow(UIWindowType.Settings);
         var transformWindow = mTaskbar.GetWindow(UIWindowType.Transform);
+
+        float timeScale = Time.timeScale;
+        float.TryParse(settingsWindow.GetSetContentValue("TimeScale"), out timeScale);
+        Time.timeScale = timeScale;
 
         if (mSelectedObject != null)
         {

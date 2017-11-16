@@ -6,11 +6,13 @@ using UnityEngine.EventSystems;
 
 public enum UIWindowType
 {
-    Transform, Rigidbody
+    Settings, Transform
 }
 
 [System.Serializable]
 public struct WindowInputField { public string key; public InputField value; }
+[System.Serializable]
+public struct WindowSlider { public string key; public Slider value; }
 
 public class PSI_UIWindow : PSI_UIDraggable {
 
@@ -24,6 +26,8 @@ public class PSI_UIWindow : PSI_UIDraggable {
     private Text TitleTextObj;
     [SerializeField]
     private WindowInputField[] InputFields;
+    [SerializeField]
+    private WindowSlider[] Sliders;
 
     public UIWindowType pType { get { return Type; } }
 
@@ -75,10 +79,13 @@ public class PSI_UIWindow : PSI_UIDraggable {
     {
         foreach (var inputField in InputFields)
             inputField.value.text = "";
+        foreach (var slider in Sliders)
+            slider.value.value = slider.value.minValue;
     }
 
-    public string GetSetContentValue(string key, string value)
+    public string GetSetContentValue(string key, string value = "")
     {
+        // Input fields.
         foreach (var inputField in InputFields)
         {
             if (inputField.key == key)
@@ -86,9 +93,18 @@ public class PSI_UIWindow : PSI_UIDraggable {
                 if (inputField.value.isFocused)
                     return inputField.value.text;
                 else
+                {
                     inputField.value.text = value;
+                    return value;
+                }
             }
         }
+
+        // Sliders.
+        foreach (var slider in Sliders)
+            if (slider.key == key)
+                return slider.value.value.ToString();
+
         return value;
     }
 

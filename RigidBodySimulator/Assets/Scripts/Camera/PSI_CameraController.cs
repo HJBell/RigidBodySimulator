@@ -23,7 +23,7 @@ public class PSI_CameraController : MonoBehaviour {
             translation.x = Input.GetAxis("Horizontal");
             translation.z = Input.GetAxis("Vertical");
             float finalMoveSpeed = (Input.GetKey(KeyCode.LeftShift)) ? MoveSpeed * ShiftMultiplier : MoveSpeed;
-            this.transform.Translate(translation.normalized * finalMoveSpeed * Time.deltaTime);
+            this.transform.Translate(translation.normalized * finalMoveSpeed * Time.unscaledDeltaTime);
 
             // Camera rotation.
             Vector3 rotation = Vector3.zero;
