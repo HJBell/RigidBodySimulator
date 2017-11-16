@@ -59,31 +59,31 @@ public class PSI_DebugManager : MonoBehaviour {
 
     private void UpdateWindowContent()
     {
-        var transformWindow = mTaskbar.GetWindow("Transform");
-        var rigidbodyWindow = mTaskbar.GetWindow("Rigidbody");
+        var transformWindow = mTaskbar.GetWindow(UIWindowType.Transform);
 
-        if(transformWindow != null)
+        if (mSelectedObject != null)
         {
-            transformWindow.ClearContent();
-            if (mSelectedObject != null)
-            {
-                var trans = mSelectedObject.transform;
-                transformWindow.SetContent("Position:  " + trans.position);
-                transformWindow.AddContentLine("Rotation:  " + trans.eulerAngles);
-                transformWindow.AddContentLine("Scale:  " + trans.localScale);
-            }
+            Vector3 pos = mSelectedObject.transform.position;
+            float.TryParse(transformWindow.GetSetContentValue("PosX", pos.x.ToString()), out pos.x);
+            float.TryParse(transformWindow.GetSetContentValue("PosY", pos.y.ToString()), out pos.y);
+            float.TryParse(transformWindow.GetSetContentValue("PosZ", pos.z.ToString()), out pos.z);
+            mSelectedObject.transform.position = pos;
+
+            Vector3 rot = mSelectedObject.transform.eulerAngles;
+            float.TryParse(transformWindow.GetSetContentValue("RotX", rot.x.ToString()), out rot.x);
+            float.TryParse(transformWindow.GetSetContentValue("RotY", rot.y.ToString()), out rot.y);
+            float.TryParse(transformWindow.GetSetContentValue("RotZ", rot.z.ToString()), out rot.z);
+            mSelectedObject.transform.eulerAngles = rot;
+
+            Vector3 scale = mSelectedObject.transform.localScale;
+            float.TryParse(transformWindow.GetSetContentValue("ScaleX", scale.x.ToString()), out scale.x);
+            float.TryParse(transformWindow.GetSetContentValue("ScaleY", scale.y.ToString()), out scale.y);
+            float.TryParse(transformWindow.GetSetContentValue("ScaleZ", scale.z.ToString()), out scale.z);
+            mSelectedObject.transform.localScale = scale;
         }
-
-        if (rigidbodyWindow != null)
+        else
         {
-            rigidbodyWindow.ClearContent();
-            if (mSelectedObject != null && mSelectedObject.GetComponent<PSI_Rigidbody>() != null)
-            {
-                var rb = mSelectedObject.GetComponent<PSI_Rigidbody>();
-                rigidbodyWindow.SetContent("Velocity:  " + rb.Velocity);
-                rigidbodyWindow.AddContentLine("Angular Velocity:  " + rb.AngularVelocity);
-                rigidbodyWindow.AddContentLine("Coeff Of Rest:  " + rb.pCoeffOfRest);
-            }
+            transformWindow.ResetContent();
         }
     }
 }

@@ -16,15 +16,15 @@ public class PSI_CameraController : MonoBehaviour {
 
     private void Update()
     {
-        // Camera translation.
-        Vector3 translation = Vector3.zero;
-        translation.x = Input.GetAxis("Horizontal");
-        translation.z = Input.GetAxis("Vertical");
-        float finalMoveSpeed = (Input.GetKey(KeyCode.LeftShift)) ? MoveSpeed * ShiftMultiplier : MoveSpeed;
-        this.transform.Translate(translation.normalized * finalMoveSpeed * Time.deltaTime);
-
         if(Input.GetMouseButton(1))
         {
+            // Camera translation.
+            Vector3 translation = Vector3.zero;
+            translation.x = Input.GetAxis("Horizontal");
+            translation.z = Input.GetAxis("Vertical");
+            float finalMoveSpeed = (Input.GetKey(KeyCode.LeftShift)) ? MoveSpeed * ShiftMultiplier : MoveSpeed;
+            this.transform.Translate(translation.normalized * finalMoveSpeed * Time.deltaTime);
+
             // Camera rotation.
             Vector3 rotation = Vector3.zero;
             rotation.x = Input.GetAxis("Mouse Y") * MouseSensitivity.y;

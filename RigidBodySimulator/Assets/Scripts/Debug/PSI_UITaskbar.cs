@@ -6,18 +6,16 @@ using UnityEngine.UI;
 public class PSI_UITaskbar : MonoBehaviour {
 
     [SerializeField]
-    private PSI_UIWindow WindowPrefab;
-    [SerializeField]
-    private PSI_UITaskbarButton TaskbarButtonPrefab;
+    private List<PSI_UIWindow> WindowPrefabs = new List<PSI_UIWindow>();
     [SerializeField]
     private Transform WindowParent;
     [SerializeField]
-    private int TaskbarSpacing = 100;
+    private PSI_UITaskbarButton TaskbarButtonPrefab;
     [SerializeField]
-    private List<string> WindowsToCreate = new List<string>();
+    private int TaskbarSpacing = 100;
 
-    private Dictionary<string, PSI_UIWindow> mWindows = new Dictionary<string, PSI_UIWindow>();
-    private Dictionary<string, PSI_UITaskbarButton> mTaskbarButtons = new Dictionary<string, PSI_UITaskbarButton>();
+    private Dictionary<UIWindowType, PSI_UIWindow> mWindows = new Dictionary<UIWindowType, PSI_UIWindow>();
+    private Dictionary<UIWindowType, PSI_UITaskbarButton> mTaskbarButtons = new Dictionary<UIWindowType, PSI_UITaskbarButton>();
     private List<Transform> mActiveButtonTransforms = new List<Transform>();
 
 
@@ -25,31 +23,29 @@ public class PSI_UITaskbar : MonoBehaviour {
 
     private void Start()
     {
-        if(!WindowPrefab || !TaskbarButtonPrefab | !WindowParent)
+        if(!TaskbarButtonPrefab | !WindowParent)
             Debug.LogError("Taskbar variables missing!");
 
-        for(int i = 0; i < WindowsToCreate.Count; i++)
+        int index = 0;
+        foreach(var windowPrefab in WindowPrefabs)
         {
-            var windowTitle = WindowsToCreate[i];
-            if (mWindows.ContainsKey(windowTitle) && mTaskbarButtons.ContainsKey(windowTitle)) continue;
+            var type = windowPrefab.pType;
 
             // Creating the window.
-            var window = Instantiate(WindowPrefab);
-            var windowObj = window.gameObject;
-            windowObj.transform.SetParent(WindowParent);
-            windowObj.transform.position = new Vector2(Camera.main.pixelWidth, Camera.main.pixelHeight) * (0.5f + (float)i * 0.03f);
-            window.pTitle = windowTitle;
-            window.SetContent("");
-            mWindows[windowTitle] = window;
+            mWindows[type] = Instantiate(windowPrefab);
+            var windowPos = new Vector2(Camera.main.pixelWidth, Camera.main.pixelHeight) * (0.5f + (float)index * 0.03f);
+            mWindows[type].Init(WindowParent, windowPos);
 
             // Creating the taskbar button.
             var taskbarButton = Instantiate(TaskbarButtonPrefab);
             var taskbarButtonObj = taskbarButton.gameObject;
             taskbarButtonObj.transform.SetParent(this.transform);
             mActiveButtonTransforms.Add(taskbarButtonObj.transform);
-            taskbarButtonObj.transform.GetChild(0).GetComponent<Text>().text = windowTitle;
-            taskbarButton.GetComponent<Button>().onClick.AddListener(delegate { TaskbarButtonClicked(windowTitle); });
-            mTaskbarButtons[windowTitle] = taskbarButton;
+            taskbarButtonObj.transform.GetChild(0).GetComponent<Text>().text = type.ToString();
+            taskbarButton.GetComponent<Button>().onClick.AddListener(delegate { TaskbarButtonClicked(type); });
+            mTaskbarButtons[type] = taskbarButton;
+
+            index++;
         }
 
         MinimiseAllWindows();
@@ -57,36 +53,36 @@ public class PSI_UITaskbar : MonoBehaviour {
 
 
     //----------------------------------------Public Functions---------------------------------------
-    
-    public void TaskbarButtonClicked(string title)
+
+    public void TaskbarButtonClicked(UIWindowType type)
     {
-        if (!mTaskbarButtons.ContainsKey(title)) return;
-        mTaskbarButtons[title].Disable();
-        if (mActiveButtonTransforms.Contains(mTaskbarButtons[title].transform))
-            mActiveButtonTransforms.Remove(mTaskbarButtons[title].transform);
-        mWindows[title].Maximise();
+        if (!mTaskbarButtons.ContainsKey(type)) return;
+        mTaskbarButtons[type].Disable();
+        if (mActiveButtonTransforms.Contains(mTaskbarButtons[type].transform))
+            mActiveButtonTransforms.Remove(mTaskbarButtons[type].transform);
+        mWindows[type].Maximise();
         UpdateTaskbar();
     }
 
-    public void WindowMinimised(string title)
+    public void WindowMinimised(UIWindowType type)
     {
-        if (!mTaskbarButtons.ContainsKey(title)) return;
-        mTaskbarButtons[title].Enable();
-        if(!mActiveButtonTransforms.Contains(mTaskbarButtons[title].transform))
-            mActiveButtonTransforms.Add(mTaskbarButtons[title].transform);
+        if (!mTaskbarButtons.ContainsKey(type)) return;
+        mTaskbarButtons[type].Enable();
+        if (!mActiveButtonTransforms.Contains(mTaskbarButtons[type].transform))
+            mActiveButtonTransforms.Add(mTaskbarButtons[type].transform);
         UpdateTaskbar();
     }
 
-    public void WindowHasFocus(string title)
+    public void WindowHasFocus(UIWindowType type)
     {
-        if (!mTaskbarButtons.ContainsKey(title)) return;
-        mWindows[title].transform.SetAsLastSibling();
+        if (!mTaskbarButtons.ContainsKey(type)) return;
+        mWindows[type].transform.SetAsLastSibling();
     }
 
-    public PSI_UIWindow GetWindow(string title)
+    public PSI_UIWindow GetWindow(UIWindowType type)
     {
-        if (!mWindows.ContainsKey(title)) return null;
-        return mWindows[title];
+        if (!mWindows.ContainsKey(type)) return null;
+        return mWindows[type];
     }
 
 
