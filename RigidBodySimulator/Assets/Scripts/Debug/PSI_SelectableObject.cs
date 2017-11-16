@@ -8,6 +8,8 @@ public class PSI_SelectableObject : MonoBehaviour {
     [SerializeField]
     private float OutlineWidth = 0.1f;
 
+    protected bool mIsSelected = false;
+
     private PSI_DebugManager mDebugManager;
 
 
@@ -37,10 +39,12 @@ public class PSI_SelectableObject : MonoBehaviour {
     {
         GetComponent<Renderer>().material.SetFloat("_Outline", OutlineWidth);
         if (mDebugManager) mDebugManager.ObjectSelected(this);
+        mIsSelected = true;
     }
 
     public virtual void Deselect()
     {
         GetComponent<Renderer>().material.SetFloat("_Outline", 0f);
+        mIsSelected = false;
     }
 }
