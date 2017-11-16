@@ -10,9 +10,6 @@ public class PSI_PhysicsManager : MonoBehaviour {
 
     private float pTimeBetweenTicks { get { return 1f / (float)TicksPerSecond; } }
 
-
-    private float t = 0.0f;
-
     //----------------------------------------Unity Functions----------------------------------------
 
     private void Start()

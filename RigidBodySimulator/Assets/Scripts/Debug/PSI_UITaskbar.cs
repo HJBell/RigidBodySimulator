@@ -18,6 +18,7 @@ public class PSI_UITaskbar : MonoBehaviour {
 
     private Dictionary<string, PSI_UIWindow> mWindows = new Dictionary<string, PSI_UIWindow>();
     private Dictionary<string, PSI_UITaskbarButton> mTaskbarButtons = new Dictionary<string, PSI_UITaskbarButton>();
+    private List<Transform> mActiveButtonTransforms = new List<Transform>();
 
 
     //----------------------------------------Unity Functions----------------------------------------
@@ -45,10 +46,7 @@ public class PSI_UITaskbar : MonoBehaviour {
             var taskbarButton = Instantiate(TaskbarButtonPrefab);
             var taskbarButtonObj = taskbarButton.gameObject;
             taskbarButtonObj.transform.SetParent(this.transform);
-            var buttonPos = taskbarButtonObj.transform.position;
-            buttonPos.y = this.transform.position.y;
-            buttonPos.x = (TaskbarSpacing * 0.6f) + TaskbarSpacing * i;
-            taskbarButtonObj.transform.position = buttonPos;
+            mActiveButtonTransforms.Add(taskbarButtonObj.transform);
             taskbarButtonObj.transform.GetChild(0).GetComponent<Text>().text = windowTitle;
             taskbarButton.GetComponent<Button>().onClick.AddListener(delegate { TaskbarButtonClicked(windowTitle); });
             mTaskbarButtons[windowTitle] = taskbarButton;
@@ -64,13 +62,19 @@ public class PSI_UITaskbar : MonoBehaviour {
     {
         if (!mTaskbarButtons.ContainsKey(title)) return;
         mTaskbarButtons[title].Disable();
+        if (mActiveButtonTransforms.Contains(mTaskbarButtons[title].transform))
+            mActiveButtonTransforms.Remove(mTaskbarButtons[title].transform);
         mWindows[title].Maximise();
+        UpdateTaskbar();
     }
 
     public void WindowMinimised(string title)
     {
         if (!mTaskbarButtons.ContainsKey(title)) return;
         mTaskbarButtons[title].Enable();
+        if(!mActiveButtonTransforms.Contains(mTaskbarButtons[title].transform))
+            mActiveButtonTransforms.Add(mTaskbarButtons[title].transform);
+        UpdateTaskbar();
     }
 
     public void WindowHasFocus(string title)
@@ -93,4 +97,19 @@ public class PSI_UITaskbar : MonoBehaviour {
         foreach (var window in mWindows)
             window.Value.Minimise();
     }
+
+    private void UpdateTaskbar()
+    {
+        int activeButtonIndex = 0;
+        foreach(var buttonTrans in mActiveButtonTransforms)
+        {
+            var buttonPos = buttonTrans.position;
+            buttonPos.y = this.transform.position.y;
+            buttonPos.x = (TaskbarSpacing * 0.6f) + TaskbarSpacing * activeButtonIndex;
+            buttonTrans.position = buttonPos;
+            activeButtonIndex++;
+        }
+    }
+
+    
 }
