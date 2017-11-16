@@ -19,22 +19,8 @@ public class PSI_DebugManager : MonoBehaviour {
 
     private void Update()
     {
-        if(mTaskbar != null)
-        {
-            var transformWindow = mTaskbar.GetWindow("Transform");
-
-            if (mSelectedObject != null)
-            {
-                transformWindow.ClearContent();
-                transformWindow.SetContent("Position:  " + mSelectedObject.transform.position);
-                transformWindow.AddContentLine("Rotation:  " + mSelectedObject.transform.eulerAngles);
-                transformWindow.AddContentLine("Scale:  " + mSelectedObject.transform.localScale);
-            }
-            else
-            {
-                transformWindow.ClearContent();
-            }            
-        }
+        if (mTaskbar != null)
+            UpdateWindowContent();
 
         // Deselecting the current object if the player clicks in empty space.
         if (Input.GetMouseButtonDown(0))
@@ -66,5 +52,38 @@ public class PSI_DebugManager : MonoBehaviour {
             if (listObj != obj)
                 listObj.Deselect();
         mSelectedObject = obj;
+    }
+
+
+    //----------------------------------------Private Functions--------------------------------------
+
+    private void UpdateWindowContent()
+    {
+        var transformWindow = mTaskbar.GetWindow("Transform");
+        var rigidbodyWindow = mTaskbar.GetWindow("Rigidbody");
+
+        if(transformWindow != null)
+        {
+            transformWindow.ClearContent();
+            if (mSelectedObject != null)
+            {
+                var trans = mSelectedObject.transform;
+                transformWindow.SetContent("Position:  " + trans.position);
+                transformWindow.AddContentLine("Rotation:  " + trans.eulerAngles);
+                transformWindow.AddContentLine("Scale:  " + trans.localScale);
+            }
+        }
+
+        if (rigidbodyWindow != null)
+        {
+            rigidbodyWindow.ClearContent();
+            if (mSelectedObject != null && mSelectedObject.GetComponent<PSI_Rigidbody>() != null)
+            {
+                var rb = mSelectedObject.GetComponent<PSI_Rigidbody>();
+                rigidbodyWindow.SetContent("Velocity:  " + rb.Velocity);
+                rigidbodyWindow.AddContentLine("Angular Velocity:  " + rb.AngularVelocity);
+                rigidbodyWindow.AddContentLine("Coeff Of Rest:  " + rb.pCoeffOfRest);
+            }
+        }
     }
 }
