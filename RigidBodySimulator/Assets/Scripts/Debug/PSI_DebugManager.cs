@@ -2,12 +2,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class PSI_DebugManager : MonoBehaviour {
+
+    [SerializeField]
+    private Image ColPointMarkerPrefab;
+    [SerializeField]
+    private int ColPointMarkerPoolSize = 20;
 
     private List<PSI_SelectableObject> mSelectableObjects = new List<PSI_SelectableObject>();
     private PSI_SelectableObject mSelectedObject;
     private PSI_UITaskbar mTaskbar;
+    private PSI_PhysicsManager mPhysicsManager;
+    private bool mHighlightCollisions = false;
+    private List<Image> mColPointMarkerPool = new List<Image>();
+    private int mColPointMarkerIndex = 0;
 
 
     //----------------------------------------Unity Functions----------------------------------------
@@ -15,19 +25,39 @@ public class PSI_DebugManager : MonoBehaviour {
     private void Start()
     {
         mTaskbar = FindObjectOfType<PSI_UITaskbar>();
+        mPhysicsManager = FindObjectOfType<PSI_PhysicsManager>();
+        BuildCollisionPointMarkerPool();
     }
 
     private void Update()
     {
-        if (mTaskbar != null)
-            UpdateWindowContent();
-
         // Deselecting the current object if the player clicks in empty space.
         if (Input.GetMouseButtonDown(0))
         {
             var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
             if (!Physics.Raycast(ray, 100) && !FindObjectOfType<EventSystem>().IsPointerOverGameObject())
                 ObjectSelected(null);
+        }
+
+        // Updating the debug window content.
+        UpdateWindowContent();
+    }
+
+    private void LateUpdate()
+    {
+        ResetCollisionPointMarkers();
+
+        // Debugging colliding objects and collision points.
+        if (mHighlightCollisions)
+        {
+            var collisionData = mPhysicsManager.GetCollisionData();
+            int i = 0;
+            foreach (var collision in collisionData)
+            {
+                collision.col1.UseDebugColour();
+                collision.col2.UseDebugColour();
+                PlaceCollisionPointMarker(collision.point);
+            }
         }
     }
 
@@ -66,6 +96,8 @@ public class PSI_DebugManager : MonoBehaviour {
         float.TryParse(settingsWindow.GetSetContentValue("TimeScale"), out timeScale);
         Time.timeScale = timeScale;
 
+        bool.TryParse(settingsWindow.GetSetContentValue("HighlightCollisions"), out mHighlightCollisions);
+
         if (mSelectedObject != null)
         {
             Vector3 pos = mSelectedObject.transform.position;
@@ -90,5 +122,36 @@ public class PSI_DebugManager : MonoBehaviour {
         {
             transformWindow.ResetContent();
         }
+    }
+
+    private void BuildCollisionPointMarkerPool()
+    {
+        var canvas = GameObject.Find("Canvas");
+        for (int i = 0; i < ColPointMarkerPoolSize; i++)
+        {
+            var obj = Instantiate(ColPointMarkerPrefab);
+            obj.transform.SetParent(canvas.transform);
+            obj.transform.SetAsFirstSibling();
+            mColPointMarkerPool.Add(obj);
+        }
+    }
+
+    private void ResetCollisionPointMarkers()
+    {
+        foreach (var marker in mColPointMarkerPool)
+            marker.enabled = false;
+        mColPointMarkerIndex = 0;
+    }
+
+    private void PlaceCollisionPointMarker(Vector3 worldPos)
+    {
+        var screenPos = Camera.main.WorldToScreenPoint(worldPos);
+        var marker = mColPointMarkerPool[mColPointMarkerIndex];
+
+        marker.enabled = true;
+        marker.transform.position = new Vector3(screenPos.x, screenPos.y);
+        marker.transform.localScale = Vector3.one / Vector3.Distance(Camera.main.transform.position, worldPos);
+
+        mColPointMarkerIndex = Mathf.Clamp(mColPointMarkerIndex+1, 0, mColPointMarkerPool.Count - 1);
     }
 }

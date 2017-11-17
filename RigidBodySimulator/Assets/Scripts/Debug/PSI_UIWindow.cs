@@ -13,6 +13,8 @@ public enum UIWindowType
 public struct WindowInputField { public string key; public InputField value; }
 [System.Serializable]
 public struct WindowSlider { public string key; public Slider value; }
+[System.Serializable]
+public struct WindowToggle { public string key; public Toggle value; }
 
 public class PSI_UIWindow : PSI_UIDraggable {
 
@@ -28,6 +30,8 @@ public class PSI_UIWindow : PSI_UIDraggable {
     private WindowInputField[] InputFields;
     [SerializeField]
     private WindowSlider[] Sliders;
+    [SerializeField]
+    private WindowToggle[] Toggles;
 
     public UIWindowType pType { get { return Type; } }
 
@@ -104,6 +108,11 @@ public class PSI_UIWindow : PSI_UIDraggable {
         foreach (var slider in Sliders)
             if (slider.key == key)
                 return slider.value.value.ToString();
+
+        // Toggles.
+        foreach (var toggle in Toggles)
+            if (toggle.key == key)
+                return toggle.value.isOn.ToString();
 
         return value;
     }
