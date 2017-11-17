@@ -15,14 +15,14 @@ public class PSI_SelectableObject : MonoBehaviour {
 
     //----------------------------------------Unity Functions----------------------------------------
 
-    private void OnEnable()
+    protected virtual void OnEnable()
     {
         mDebugManager = FindObjectOfType<PSI_DebugManager>();
 
         if (mDebugManager) mDebugManager.AddObject(this);
     }
 
-    private void OnDisable()
+    protected virtual void OnDisable()
     {
         if (mDebugManager) mDebugManager.RemoveObject(this);
     }

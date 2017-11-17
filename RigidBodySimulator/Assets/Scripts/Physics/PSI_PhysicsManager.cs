@@ -5,55 +5,41 @@ using System.Threading;
 
 public class PSI_PhysicsManager : MonoBehaviour {
 
-    [SerializeField]
-    private int TicksPerSecond = 30;
+    private List<PSI_Collider> mColliders = new List<PSI_Collider>();
 
-    private float pTimeBetweenTicks { get { return 1f / (float)TicksPerSecond; } }
 
-    //----------------------------------------Unity Functions----------------------------------------
+    //--------------------------------------Unity Functions--------------------------------------
 
-    private void Start()
+    private void FixedUpdate()
     {
-        StartCoroutine(PhysicsLoop());
+        for (int i = 0; i < mColliders.Count; i++)
+            for (int j = i + 1; j < mColliders.Count; j++)
+                CheckForCollision(mColliders[i], mColliders[j]);
     }
 
 
-    //----------------------------------------Private Functions--------------------------------------
+    //-------------------------------------Public Functions-------------------------------------    
 
-    private void Tick()
+    public void AddCollider(PSI_Collider collider)
     {
-        //print("Tick! - " + (1f / (Time.unscaledTime - t)));
-        //t = Time.unscaledTime;
+        if (!mColliders.Contains(collider))
+            mColliders.Add(collider);
     }
 
-    private IEnumerator PhysicsLoop()
+    public void RemoveCollider(PSI_Collider collider)
     {
-        int lastPrintSecond = 0;
-        int tickCount = 0;
-
-        float timeOfLastTick = -1f;
-
-        while(true)
-        {
-            if(Time.unscaledTime - timeOfLastTick >= pTimeBetweenTicks)
-            {
-                timeOfLastTick = Time.unscaledTime;
-
-                Tick();
-                tickCount++;
-
-                if (Mathf.FloorToInt(Time.timeSinceLevelLoad) > lastPrintSecond)
-                {
-                    print("Ticks this second: " + tickCount);
-                    tickCount = 0;
-                    lastPrintSecond = Mathf.FloorToInt(Time.timeSinceLevelLoad);
-                }
-            }
+        if (mColliders.Contains(collider))
+            mColliders.Remove(collider);
+    }
 
 
-            yield return null;
-            //yield return new WaitForSecondsRealtime(pTimeBetweenTicks);
-        }
-        
+    //------------------------------------Private Functions-------------------------------------
+
+    private void CheckForCollision(PSI_Collider col1, PSI_Collider col2)
+    {
+        // Sphere on sphere.
+        if (col1.pColliderType == ColliderType.Sphere && col2.pColliderType == ColliderType.Sphere)
+            if (PSI_PhysicsUtils.SphereSphereCollisionOccured((PSI_Collider_Sphere)col1, (PSI_Collider_Sphere)col2))
+                ;
     }
 }

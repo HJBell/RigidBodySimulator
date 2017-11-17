@@ -23,6 +23,19 @@ public abstract class PSI_Collider : PSI_SelectableObject {
 
     //----------------------------------------Unity Functions----------------------------------------
 
+    protected override void OnEnable()
+    {
+        base.OnEnable();
+        FindObjectOfType<PSI_PhysicsManager>().AddCollider(this);
+    }
+
+    protected override void OnDisable()
+    {
+        base.OnEnable();
+        if (FindObjectOfType<PSI_PhysicsManager>())
+            FindObjectOfType<PSI_PhysicsManager>().RemoveCollider(this);
+    }
+
     private void Update()
     {
         if (mIsSelected) DrawDebug();

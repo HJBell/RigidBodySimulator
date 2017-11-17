@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PSI_Collider_Sphere : PSI_Collider {
 
-    private float pRadius { get { return Mathf.Max(new float[] { transform.lossyScale.x, transform.lossyScale.y, transform.lossyScale.z }) * ColliderScale * .5f; } }
+    public float pRadius { get { return Mathf.Max(new float[] { transform.lossyScale.x, transform.lossyScale.y, transform.lossyScale.z }) * ColliderScale * .5f; } }
 
 
     //----------------------------------------Unity Functions----------------------------------------
