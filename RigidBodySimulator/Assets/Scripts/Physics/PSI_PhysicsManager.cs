@@ -61,6 +61,16 @@ public class PSI_PhysicsManager : MonoBehaviour {
             if (PSI_PhysicsUtils.SphereSphereCollisionOccured((PSI_Collider_Sphere)col1, (PSI_Collider_Sphere)col2, out collision.point))
                 collisionOccurred = true;
 
-        if(collisionOccurred) mCollisionData.Add(collision);
+        // Sphere on plane.
+        if ((col1.pType == ColliderType.Sphere && col2.pType == ColliderType.Plane) ||
+            (col1.pType == ColliderType.Plane && col2.pType == ColliderType.Sphere))
+        {
+            PSI_Collider_Sphere sphere = (PSI_Collider_Sphere)((col1.pType == ColliderType.Sphere) ? col1 : col2);
+            PSI_Collider_Plane plane = (PSI_Collider_Plane)((col1.pType == ColliderType.Sphere) ? col2 : col1);
+            if (PSI_PhysicsUtils.SpherePlaneCollisionOccured(sphere, plane, out collision.point))
+                collisionOccurred = true;
+        }
+
+        if (collisionOccurred) mCollisionData.Add(collision);
     }
 }

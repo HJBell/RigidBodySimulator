@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+[RequireComponent(typeof(cakeslice.Outline))]
 public class PSI_SelectableObject : MonoBehaviour {
-
-    [SerializeField]
-    private float OutlineWidth = 0.1f;
 
     protected bool mIsSelected = false;
 
@@ -14,6 +12,11 @@ public class PSI_SelectableObject : MonoBehaviour {
 
 
     //----------------------------------------Unity Functions----------------------------------------
+
+    protected virtual void Start()
+    {
+        Deselect();
+    }
 
     protected virtual void OnEnable()
     {
@@ -37,14 +40,14 @@ public class PSI_SelectableObject : MonoBehaviour {
 
     public virtual void Select()
     {
-        GetComponent<Renderer>().material.SetFloat("_Outline", OutlineWidth);
+        this.GetComponent<cakeslice.Outline>().enabled = true;
         if (mDebugManager) mDebugManager.ObjectSelected(this);
         mIsSelected = true;
     }
 
     public virtual void Deselect()
     {
-        GetComponent<Renderer>().material.SetFloat("_Outline", 0f);
+        this.GetComponent<cakeslice.Outline>().enabled = false;
         mIsSelected = false;
     }
 }

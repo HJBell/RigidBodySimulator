@@ -4,7 +4,7 @@ using UnityEngine;
 
 public enum ColliderType
 {
-    Sphere
+    Sphere, Plane
 };
 
 [RequireComponent(typeof(Collider))]

@@ -10,6 +10,7 @@ public class PSI_DebugRenderer : MonoBehaviour {
 
     private Stack<Vector3> mSphereCentres = new Stack<Vector3>();
     private Stack<float> mSphereRadii = new Stack<float>();
+    private Stack<Vector3> mLineVerts = new Stack<Vector3>();
 
 
     //----------------------------------------Unity Functions----------------------------------------
@@ -26,6 +27,10 @@ public class PSI_DebugRenderer : MonoBehaviour {
         // Rendering the wire spheres for this frame.
         while(mSphereCentres.Count > 0)
             DrawGLWireSphere(mSphereCentres.Pop(), mSphereRadii.Pop(), 100);
+
+        // Rendering the lines for this frame.
+        while (mLineVerts.Count > 1)
+            DrawGLLine(mLineVerts.Pop(), mLineVerts.Pop());
     }
 
 
@@ -35,6 +40,12 @@ public class PSI_DebugRenderer : MonoBehaviour {
     {
         mSphereCentres.Push(centre);
         mSphereRadii.Push(radius+0.005f);
+    }
+
+    public void DrawLine(Vector3 start, Vector3 end)
+    {
+        mLineVerts.Push(start);
+        mLineVerts.Push(end);
     }
 
 
@@ -59,6 +70,14 @@ public class PSI_DebugRenderer : MonoBehaviour {
             GL.Vertex3(centre.x + x1, centre.y, centre.z + y1);
             GL.Vertex3(centre.x + x2, centre.y, centre.z + y2);
         }
+        GL.End();
+    }
+
+    private void DrawGLLine(Vector3 start, Vector3 end)
+    {
+        GL.Begin(GL.LINES);
+        GL.Vertex3(start.x, start.y, start.z);
+        GL.Vertex3(end.x, end.y, end.z);
         GL.End();
     }
 }

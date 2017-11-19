@@ -51,7 +51,6 @@ public class PSI_DebugManager : MonoBehaviour {
         if (mHighlightCollisions)
         {
             var collisionData = mPhysicsManager.GetCollisionData();
-            int i = 0;
             foreach (var collision in collisionData)
             {
                 collision.col1.UseDebugColour();
