@@ -71,6 +71,31 @@ public class PSI_PhysicsManager : MonoBehaviour {
                 collisionOccurred = true;
         }
 
+        // Sphere on box.
+        if ((col1.pType == ColliderType.Sphere && col2.pType == ColliderType.Box) ||
+            (col1.pType == ColliderType.Box && col2.pType == ColliderType.Sphere))
+        {
+            PSI_Collider_Sphere sphere = (PSI_Collider_Sphere)((col1.pType == ColliderType.Sphere) ? col1 : col2);
+            PSI_Collider_Box box = (PSI_Collider_Box)((col1.pType == ColliderType.Sphere) ? col2 : col1);
+            if (PSI_PhysicsUtils.SphereBoxCollisionOccured(sphere, box, out collision.point))
+                collisionOccurred = true;
+        }
+
+        // Box on box.
+        if ((col1.pType == ColliderType.Box && col2.pType == ColliderType.Box))
+          if (PSI_PhysicsUtils.BoxBoxCollisionOccured((PSI_Collider_Box)col1, (PSI_Collider_Box)col2, out collision.point))
+                collisionOccurred = true;
+
+        // Box on plane.
+        if ((col1.pType == ColliderType.Box && col2.pType == ColliderType.Plane) ||
+            (col1.pType == ColliderType.Plane && col2.pType == ColliderType.Box))
+        {
+            PSI_Collider_Box box = (PSI_Collider_Box)((col1.pType == ColliderType.Box) ? col1 : col2);
+            PSI_Collider_Plane plane = (PSI_Collider_Plane)((col1.pType == ColliderType.Box) ? col2 : col1);
+            if (PSI_PhysicsUtils.BoxPlaneCollisionOccured(box, plane, out collision.point))
+                collisionOccurred = true;
+        }
+
         if (collisionOccurred) mCollisionData.Add(collision);
     }
 }

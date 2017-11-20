@@ -10,16 +10,18 @@ public class PSI_Collider_Sphere : PSI_Collider {
 
     //----------------------------------------Unity Functions----------------------------------------
 
-    protected override void OnDrawGizmos()
+    protected override void Awake()
     {
-        Gizmos.DrawWireSphere(pPosition, pRadius);
+        base.Awake();
+        this.mType = ColliderType.Sphere;
     }
 
 
-    //----------------------------------------Public Functions---------------------------------------
+    //---------------------------------------Protected Functions-------------------------------------
 
-    public override void DrawDebug()
+    protected override void DrawCollider(DrawMode mode)
     {
-        FindObjectOfType<PSI_DebugRenderer>().DrawWireSphere(pPosition, pRadius);
+        if(mode == DrawMode.Gizmo) Gizmos.DrawWireSphere(pPosition, pRadius);
+        else FindObjectOfType<PSI_DebugRenderer>().DrawWireSphere(pPosition, pRadius);
     }
 }
