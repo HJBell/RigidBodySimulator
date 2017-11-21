@@ -2,15 +2,36 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public struct ImpulseResult
+{
+    public Vector3 Impulse1;
+    public Vector3 Impulse2;
+}
+
 public static class PSI_PhysicsUtils {
 
 
     //----------------------------------------Public Functions---------------------------------------
 
-    public static bool SphereSphereCollisionOccured(PSI_Collider_Sphere col1, PSI_Collider_Sphere col2, out Vector3 point)
+    public static bool SphereSphereCollisionCheck(PSI_Collider_Sphere col1, PSI_Collider_Sphere col2, out Vector3 point)
     {
-        point = col1.pPosition + (col2.pPosition - col1.pPosition) / 2f;
-        return Vector3.Distance(col1.pPosition, col2.pPosition) <= Mathf.Abs(col1.pRadius) + Mathf.Abs(col2.pRadius);
+        // Determine if colliding.
+        var collisionVector = col2.pPosition - col1.pPosition;
+        point = col1.pPosition + collisionVector / 2f;
+        bool isColliding = collisionVector.magnitude <= Mathf.Abs(col1.pRadius) + Mathf.Abs(col2.pRadius);
+
+        if (isColliding)
+        {
+            // Resolve collision intersection.
+            float overlap = collisionVector.magnitude - (col1.pRadius + col2.pRadius);
+            ResolveCollisionOverlaps(col1, col2, collisionVector, overlap);
+
+            // Apply impulses to the bodies.
+            ApplyImpulses(col1, col2, collisionVector);
+
+            return true;
+        }
+        return false;
     }
 
     public static bool SpherePlaneCollisionOccured(PSI_Collider_Sphere sphereCol, PSI_Collider_Plane planeCol, out Vector3 point)
@@ -39,12 +60,22 @@ public static class PSI_PhysicsUtils {
             totalTriArea += Mathf.Sqrt(s * (s - a) * (s - b) * (s - c));
         }
 
-        // Check if the sum area is equal to the area of the plane. 
-        // If so then the projected point is within the bounds of the plane.
-        if (Mathf.Abs(totalTriArea - planeCol.pArea) > sphereCol.pRadius) return false;
+        // Determine if a collision occured.
+        bool isColliding = Mathf.Abs(totalTriArea - planeCol.pArea) < 0.01f && Mathf.Abs(distToProjectedPoint) <= sphereCol.pRadius;
 
-        // Check if the sphere is intersecting with the plane.
-        return (Mathf.Abs(distToProjectedPoint) <= sphereCol.pRadius);
+        if (isColliding)
+        {
+            // Resolve collision intersection.
+            var colVector = point - sphereCol.pPosition;
+            var overlap = colVector.magnitude - sphereCol.pRadius;
+            ResolveCollisionOverlaps(sphereCol, planeCol, colVector, overlap);
+            
+            // Apply impulses to bodies.
+            ApplyImpulses(sphereCol, planeCol, colVector);
+
+            return true;
+        }
+        return false;
     }
 
     public static bool SphereBoxCollisionOccured(PSI_Collider_Sphere sphereCol, PSI_Collider_Box boxCol, out Vector3 point)
@@ -70,7 +101,8 @@ public static class PSI_PhysicsUtils {
         var pointCloseToBoxCentre = sphereCol.pPosition + (boxCol.pPosition - sphereCol.pPosition).normalized * sphereCol.pRadius;
         var sphereVerts = new Vector3[] { pointCloseToBoxVert, pointCloseToBoxCentre };
 
-        if (CheckForOverlapUsingSAT(boxAxes, boxVerts, sphereVerts)) return true;
+        if (CheckForOverlapUsingSAT(boxAxes, boxVerts, sphereVerts))
+            return true;
         return false;
     }
 
@@ -100,6 +132,7 @@ public static class PSI_PhysicsUtils {
         };
         var col1Verts = col1.GetVertices();
         var col2Verts = col2.GetVertices();
+
         if (CheckForOverlapUsingSAT(axesToCheck, col2Verts, col1Verts)) return true;
         if (CheckForOverlapUsingSAT(axesToCheck, col1Verts, col2Verts)) return true;
         return false;
@@ -162,7 +195,7 @@ public static class PSI_PhysicsUtils {
 
     private static bool CheckForOverlapUsingSAT(Vector3[] separatingAxes, Vector3[] verts1, Vector3[] verts2)
     {
-        float minOverlap = float.PositiveInfinity;
+        var minOverlap = float.PositiveInfinity;
 
         for (int i = 0; i < separatingAxes.Length; i++)
         {
@@ -170,7 +203,7 @@ public static class PSI_PhysicsUtils {
             float maxDot1 = float.MinValue;
 
             float minDot2 = float.MaxValue;
-            float maxDot2 = float.MinValue; 
+            float maxDot2 = float.MinValue;
 
             Vector3 axis = separatingAxes[i];
 
@@ -203,5 +236,46 @@ public static class PSI_PhysicsUtils {
             if (overlap <= 0) return false;
         }
         return true;
+    }
+
+    private static void ResolveCollisionOverlaps(PSI_Collider col1, PSI_Collider col2, Vector3 collisionAxis, float overlap)
+    {
+        var inverseMass1 = col1.pRigidbody ? 1.0f / col1.pRigidbody.pMass : 0f;
+        var inverseMass2 = col2.pRigidbody ? 1.0f / col2.pRigidbody.pMass : 0f;
+        if (inverseMass1 + inverseMass2 == 0f) return;
+
+        var minTranslationVector = -collisionAxis.normalized * Mathf.Abs(overlap);
+        col1.transform.Translate(minTranslationVector * (inverseMass1 / (inverseMass1 + inverseMass2)));
+        col2.transform.Translate(-minTranslationVector * (inverseMass2 / (inverseMass1 + inverseMass2)));
+    }
+
+    private static void ApplyImpulses(PSI_Collider col1, PSI_Collider col2, Vector3 collisionAxis)
+    {
+        Vector3[] velocities = new Vector3[] { Vector3.zero, Vector3.zero };
+        float[] inverseMasses = new float[] { 0f, 0f };
+        float[] coeffsOfRes = new float[] { 1f, 1f };
+        PSI_Rigidbody[] rbs = new PSI_Rigidbody[] { col1.pRigidbody, col2.pRigidbody };
+
+        for (int j = 0; j < 2; j++)
+        {
+            if (rbs[j] != null)
+            {
+                velocities[j] = rbs[j].Velocity;
+                inverseMasses[j] = 1.0f / rbs[j].pMass;
+                coeffsOfRes[j] = rbs[j].pCoeffOfRest;
+            }
+        }
+
+        var impactVelocity = velocities[0] - velocities[1];
+
+        var vn = Vector3.Dot(impactVelocity, -collisionAxis.normalized);
+        if (vn > 0.0f) return;
+
+        var finalCoeffOfRest = coeffsOfRes[0] * coeffsOfRes[1];
+        var i = (-(1.0f + finalCoeffOfRest) * vn) / (inverseMasses[0] + inverseMasses[1]);
+        var impulse = -collisionAxis.normalized * i;
+
+        if(rbs[0] != null) rbs[0].Velocity += impulse * inverseMasses[0];
+        if (rbs[1] != null) rbs[1].Velocity += -impulse * inverseMasses[1];
     }
 }

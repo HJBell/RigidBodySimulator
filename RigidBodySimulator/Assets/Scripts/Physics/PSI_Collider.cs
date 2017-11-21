@@ -20,6 +20,7 @@ public abstract class PSI_Collider : PSI_SelectableObject {
     public ColliderType pType { get { return mType; } }
     public Vector3 pPosition { get { return this.transform.position + this.transform.TransformDirection(LocalPosition); } }
     public bool pIsColliding { set { mIsColliding = value; } }
+    public PSI_Rigidbody pRigidbody { get { return GetComponent<PSI_Rigidbody>(); } }
 
     [SerializeField]
     protected float ColliderScale = 1.0f;
