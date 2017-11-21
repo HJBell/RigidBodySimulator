@@ -42,6 +42,30 @@ public class PSI_Collider_Box : PSI_Collider {
         return axis;
     }
 
+    public float[] GetExtents()
+    {
+        return new float[] { pSize.x, pSize.y, pSize.z };
+    }
+
+    public Vector3 GetClosestPointOnBox(Vector3 point)
+    {
+        Vector3 closestPoint;
+        Vector3 d = point - pPosition;
+        var axes = GetAxes();
+        var extents = GetExtents();
+
+        closestPoint = pPosition;
+        for (int i = 0; i < 3; ++i)
+        {
+            float dist = Vector3.Dot(d, axes[i]);
+            if (dist > extents[i] * 0.5f) dist = extents[i] * 0.5f;
+            if (dist < -extents[i] * 0.5f) dist = -extents[i] * 0.5f;
+            closestPoint += dist * axes[i];
+        }
+
+        return closestPoint;
+    }
+
 
     //---------------------------------------Protected Functions-------------------------------------
 

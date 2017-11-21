@@ -22,8 +22,8 @@ public static class PSI_PhysicsUtils {
 
         if (isColliding)
         {
-            // Resolve collision intersection.
-            float overlap = collisionVector.magnitude - (col1.pRadius + col2.pRadius);
+            var collisionAxis = CorrectCollisionAxisDirection(col1.pPosition, col2.pPosition, collisionVector);
+            var overlap = collisionAxis.magnitude - (col1.pRadius + col2.pRadius);
             ResolveCollisionOverlaps(col1, col2, collisionVector, overlap);
 
             // Apply impulses to the bodies.
@@ -65,13 +65,10 @@ public static class PSI_PhysicsUtils {
 
         if (isColliding)
         {
-            // Resolve collision intersection.
-            var colVector = point - sphereCol.pPosition;
-            var overlap = colVector.magnitude - sphereCol.pRadius;
-            ResolveCollisionOverlaps(sphereCol, planeCol, colVector, overlap);
-            
-            // Apply impulses to bodies.
-            ApplyImpulses(sphereCol, planeCol, colVector);
+            var collisionAxis = CorrectCollisionAxisDirection(planeCol.pPosition, sphereCol.pPosition, point - sphereCol.pPosition);
+            var overlap = collisionAxis.magnitude - sphereCol.pRadius;
+            ResolveCollisionOverlaps(sphereCol, planeCol, collisionAxis, overlap);
+            ApplyImpulses(sphereCol, planeCol, collisionAxis);
 
             return true;
         }
@@ -80,29 +77,21 @@ public static class PSI_PhysicsUtils {
 
     public static bool SphereBoxCollisionOccured(PSI_Collider_Sphere sphereCol, PSI_Collider_Box boxCol, out Vector3 point)
     {
-        point = Vector3.up * 9999;
+        var closestPointOnBox = boxCol.GetClosestPointOnBox(sphereCol.pPosition);
+        var collisionVector = closestPointOnBox - sphereCol.pPosition;
+        point = sphereCol.pPosition + collisionVector;
+        bool isColliding = collisionVector.magnitude <= Mathf.Abs(sphereCol.pRadius);
 
-        var boxAxes = boxCol.GetAxes();
-        var boxVerts = boxCol.GetVertices();
-
-        float nearestVertDist = float.PositiveInfinity;
-        Vector3 nearestVert = Vector3.zero;
-        foreach (var vert in boxVerts)
+        if (isColliding)
         {
-            var dist = Vector3.Distance(vert, sphereCol.pPosition);
-            if (dist < nearestVertDist)
-            {
-                nearestVertDist = dist;
-                nearestVert = vert;
-            }
+            var collisionAxis = CorrectCollisionAxisDirection(boxCol.pPosition, sphereCol.pPosition, collisionVector);
+            float overlap = collisionVector.magnitude - sphereCol.pRadius;
+            ResolveCollisionOverlaps(sphereCol, boxCol, collisionAxis, overlap);
+            ApplyImpulses(sphereCol, boxCol, collisionAxis);
+
+            return true;
         }
 
-        var pointCloseToBoxVert = sphereCol.pPosition + (nearestVert - sphereCol.pPosition).normalized * sphereCol.pRadius;
-        var pointCloseToBoxCentre = sphereCol.pPosition + (boxCol.pPosition - sphereCol.pPosition).normalized * sphereCol.pRadius;
-        var sphereVerts = new Vector3[] { pointCloseToBoxVert, pointCloseToBoxCentre };
-
-        if (CheckForOverlapUsingSAT(boxAxes, boxVerts, sphereVerts))
-            return true;
         return false;
     }
 
@@ -133,69 +122,63 @@ public static class PSI_PhysicsUtils {
         var col1Verts = col1.GetVertices();
         var col2Verts = col2.GetVertices();
 
-        if (CheckForOverlapUsingSAT(axesToCheck, col2Verts, col1Verts)) return true;
-        if (CheckForOverlapUsingSAT(axesToCheck, col1Verts, col2Verts)) return true;
+        Vector3 minOverlapAxis = Vector3.zero;
+        float minOverlap = 0f;
+
+        if (CheckForOverlapUsingSAT(axesToCheck, col2Verts, col1Verts, out minOverlapAxis, out minOverlap) ||
+            CheckForOverlapUsingSAT(axesToCheck, col1Verts, col2Verts, out minOverlapAxis, out minOverlap))
+        {
+            var collisionAxis = CorrectCollisionAxisDirection(col2.pPosition, col1.pPosition, minOverlapAxis);
+            ResolveCollisionOverlaps(col1, col2, collisionAxis, minOverlap);
+            ApplyImpulses(col1, col2, collisionAxis);
+            return true;
+        }
         return false;
     }
 
     public static bool BoxPlaneCollisionOccured(PSI_Collider_Box boxCol, PSI_Collider_Plane planeCol, out Vector3 point)
     {
-        point = Vector3.up * 9999;
-
         var boxAxes = boxCol.GetAxes();
         var boxVerts = boxCol.GetVertices();
 
-        var projectedPointsList = new List<Vector3>();
-    
+        float distToClosestProjectedPoint = float.PositiveInfinity;
+        Vector3 intersectingVertex = Vector3.zero;
+        point = Vector3.zero;
+        bool collisionOccured = false;
+
         for(int i = 0; i < 8; i++)
         {
-            float distToProjectedPoint = Vector3.Dot(planeCol.pNormal, (boxVerts[i] - planeCol.pPosition));
-            Vector3 projectedPoint = boxVerts[i] - distToProjectedPoint * planeCol.pNormal;
+            Vector3 pointOnPlane = Vector3.zero;
+            if (!planeCol.PosIsWithinPlaneBounds(boxVerts[i], out pointOnPlane))
+                continue;
 
-            // Generate 4 triangles between the corners of the plane and the projected point.
-            var planeVerts = planeCol.GetVertices();
-            var triangles = new Vector3[4, 3];
-            for (int j = 0; j < 4; j++)
-            {
-                triangles[j, 0] = projectedPoint;
-                triangles[j, 1] = planeVerts[j];
-                triangles[j, 2] = planeVerts[(j == 3) ? 0 : j + 1];
-            }
+            float dist = Vector3.Dot(planeCol.pNormal, (boxVerts[i] - planeCol.pPosition));
+            if (dist > 0f && distToClosestProjectedPoint <= 0f) collisionOccured = true;
+            if (dist > distToClosestProjectedPoint)
+                continue;
 
-            // Sum the area of the traingles.
-            float totalTriArea = 0.0f;
-            for (int j = 0; j < 4; j++)
-            {
-                float a = Vector3.Distance(triangles[j, 0], triangles[j, 1]);
-                float b = Vector3.Distance(triangles[j, 1], triangles[j, 2]);
-                float c = Vector3.Distance(triangles[j, 2], triangles[j, 0]);
-                float s = (a + b + c) / 2;
-                totalTriArea += Mathf.Sqrt(s * (s - a) * (s - b) * (s - c));
-            }
-
-            if (Mathf.Abs(totalTriArea - planeCol.pArea) <= 0.01f) projectedPointsList.Add(projectedPoint);
+            distToClosestProjectedPoint = dist;
+            intersectingVertex = boxVerts[i];
+            point = pointOnPlane;
         }
 
-        var axesToCheck = new Vector3[]
+        if (collisionOccured)
         {
-            boxAxes[0],
-            boxAxes[1],
-            boxAxes[2],
-            planeCol.transform.right,
-            planeCol.transform.forward,
-            planeCol.transform.up
-        };
-
-        if (CheckForOverlapUsingSAT(axesToCheck, boxVerts, projectedPointsList.ToArray())) return true;
+            var collisionAxis = CorrectCollisionAxisDirection(intersectingVertex, point, point - intersectingVertex);
+            ResolveCollisionOverlaps(boxCol, planeCol, collisionAxis, collisionAxis.magnitude);
+            ApplyImpulses(boxCol, planeCol, collisionAxis);
+            return true;
+        }
         return false;
     }
 
 
     //----------------------------------------Private Functions--------------------------------------
 
-    private static bool CheckForOverlapUsingSAT(Vector3[] separatingAxes, Vector3[] verts1, Vector3[] verts2)
+    private static bool CheckForOverlapUsingSAT(Vector3[] separatingAxes, Vector3[] verts1, Vector3[] verts2, out Vector3 minOverlapAxis, out float minOverlap)
     {
-        var minOverlap = float.PositiveInfinity;
+        minOverlapAxis = Vector3.zero;
+        minOverlap = float.PositiveInfinity;
 
         for (int i = 0; i < separatingAxes.Length; i++)
         {
@@ -212,15 +195,15 @@ public static class PSI_PhysicsUtils {
             for (int j = 0; j < verts1.Length; j++)
             {
                 float dot = Vector3.Dot((verts1[j]), axis);
-                if (dot < minDot2) minDot2 = dot;
-                if (dot > maxDot2) maxDot2 = dot;                
+                if (dot < minDot1) minDot1 = dot;
+                if (dot > maxDot1) maxDot1 = dot;
             }
 
             for (int j = 0; j < verts2.Length; j++)
             {
                 float dot = Vector3.Dot((verts2[j]), axis);
-                if (dot < minDot1) minDot1 = dot;
-                if (dot > maxDot1) maxDot1 = dot;
+                if (dot < minDot2) minDot2 = dot;
+                if (dot > maxDot2) maxDot2 = dot;
             }
 
             float overlap = maxDot2 - minDot1;
@@ -231,7 +214,11 @@ public static class PSI_PhysicsUtils {
             }
             if (maxDot2 < minDot1) overlap = 0f;
 
-            if (overlap < minOverlap) minOverlap = overlap;
+            if (overlap < minOverlap)
+            {
+                minOverlap = overlap;
+                minOverlapAxis = separatingAxes[i];
+            }
 
             if (overlap <= 0) return false;
         }
@@ -277,5 +264,12 @@ public static class PSI_PhysicsUtils {
 
         if(rbs[0] != null) rbs[0].Velocity += impulse * inverseMasses[0];
         if (rbs[1] != null) rbs[1].Velocity += -impulse * inverseMasses[1];
+    }
+
+    private static Vector3 CorrectCollisionAxisDirection(Vector3 colPoint1, Vector3 colPoint2, Vector3 colAxis)
+    {
+        if (Vector3.Dot(colPoint1 - colPoint2, colAxis) < 0f)
+            return -colAxis;
+        return colAxis;
     }
 }

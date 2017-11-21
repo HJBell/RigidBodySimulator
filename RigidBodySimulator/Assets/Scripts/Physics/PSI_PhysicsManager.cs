@@ -18,7 +18,7 @@ public class PSI_PhysicsManager : MonoBehaviour {
 
     //--------------------------------------Unity Functions--------------------------------------
 
-    private void FixedUpdate()
+    private void Update()
     {
         mCollisionData.Clear();
         for (int i = 0; i < mColliders.Count; i++)

@@ -31,6 +31,37 @@ public class PSI_Collider_Plane : PSI_Collider {
         return vertices;
     }
 
+    public bool PosIsWithinPlaneBounds(Vector3 pos, out Vector3 relativePointOnPlane)
+    {
+        // Projecting the position onto the plane.
+        float distToProjectedPoint = Vector3.Dot(pNormal, (pos - pPosition));
+        relativePointOnPlane = pos - distToProjectedPoint * pNormal;
+
+        // Generate 4 triangles between the corners of the plane and the projected point.
+        var verts = GetVertices();
+        var triangles = new Vector3[4, 3];
+        for (int j = 0; j < 4; j++)
+        {
+            triangles[j, 0] = relativePointOnPlane;
+            triangles[j, 1] = verts[j];
+            triangles[j, 2] = verts[(j == 3) ? 0 : j + 1];
+        }
+
+        // Sum the area of the traingles.
+        float totalTriArea = 0.0f;
+        for (int j = 0; j < 4; j++)
+        {
+            float a = Vector3.Distance(triangles[j, 0], triangles[j, 1]);
+            float b = Vector3.Distance(triangles[j, 1], triangles[j, 2]);
+            float c = Vector3.Distance(triangles[j, 2], triangles[j, 0]);
+            float s = (a + b + c) / 2;
+            totalTriArea += Mathf.Sqrt(s * (s - a) * (s - b) * (s - c));
+        }
+
+        // Returning true if the projected point on the plane is within the plane bounds.
+        return (Mathf.Abs(totalTriArea - pArea) <= 0.01f);
+    }
+
 
     //---------------------------------------Protected Functions-------------------------------------
 
