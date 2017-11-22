@@ -90,6 +90,7 @@ public class PSI_DebugManager : MonoBehaviour {
     {
         var settingsWindow = mTaskbar.GetWindow(UIWindowType.Settings);
         var transformWindow = mTaskbar.GetWindow(UIWindowType.Transform);
+        var rigidbodyWindow = mTaskbar.GetWindow(UIWindowType.Rigidbody);
 
         float timeScale = Time.timeScale;
         float.TryParse(settingsWindow.GetSetContentValue("TimeScale"), out timeScale);
@@ -116,6 +117,37 @@ public class PSI_DebugManager : MonoBehaviour {
             float.TryParse(transformWindow.GetSetContentValue("ScaleY", scale.y.ToString()), out scale.y);
             float.TryParse(transformWindow.GetSetContentValue("ScaleZ", scale.z.ToString()), out scale.z);
             mSelectedObject.transform.localScale = scale;
+
+            if(mSelectedObject.GetComponent<PSI_Rigidbody>())
+            {
+                var rigidbody = mSelectedObject.GetComponent<PSI_Rigidbody>();
+
+                Vector3 vel = rigidbody.Velocity;
+                float.TryParse(rigidbodyWindow.GetSetContentValue("VelX", vel.x.ToString()), out vel.x);
+                float.TryParse(rigidbodyWindow.GetSetContentValue("VelY", vel.y.ToString()), out vel.y);
+                float.TryParse(rigidbodyWindow.GetSetContentValue("VelZ", vel.z.ToString()), out vel.z);
+                rigidbody.Velocity = vel;
+
+                Vector3 angVel = rigidbody.AngularVelocity;
+                float.TryParse(rigidbodyWindow.GetSetContentValue("AngVelX", angVel.x.ToString()), out angVel.x);
+                float.TryParse(rigidbodyWindow.GetSetContentValue("AngVelY", angVel.y.ToString()), out angVel.y);
+                float.TryParse(rigidbodyWindow.GetSetContentValue("AngVelZ", angVel.z.ToString()), out angVel.z);
+                rigidbody.AngularVelocity = angVel;
+
+                float mass = rigidbody.Mass;
+                float.TryParse(rigidbodyWindow.GetSetContentValue("Mass", mass.ToString()), out mass);
+                rigidbody.Mass = mass;
+
+                float coeffRest = rigidbody.CoeffOfRest;
+                float.TryParse(rigidbodyWindow.GetSetContentValue("CoeffRest"), out coeffRest);
+                rigidbody.CoeffOfRest = coeffRest;
+
+                float coeffFrict = rigidbody.CoeffOfFrict;
+                float.TryParse(rigidbodyWindow.GetSetContentValue("CoeffFrict"), out coeffFrict);
+                rigidbody.CoeffOfFrict = coeffFrict;
+
+                bool.TryParse(rigidbodyWindow.GetSetContentValue("UseGravity"), out rigidbody.UseGravity);
+            }
         }
         else
         {

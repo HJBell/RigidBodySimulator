@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public enum UIWindowType
 {
-    Settings, Transform
+    Settings, Transform, Rigidbody
 }
 
 [System.Serializable]

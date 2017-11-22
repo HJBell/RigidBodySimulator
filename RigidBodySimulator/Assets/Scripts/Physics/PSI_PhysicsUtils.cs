@@ -27,7 +27,7 @@ public static class PSI_PhysicsUtils {
             ResolveCollisionOverlaps(col1, col2, collisionVector, overlap);
 
             // Apply impulses to the bodies.
-            ApplyImpulses(col1, col2, collisionVector);
+            ApplyImpulses(col1, col2, collisionVector, point);
 
             return true;
         }
@@ -68,7 +68,22 @@ public static class PSI_PhysicsUtils {
             var collisionAxis = CorrectCollisionAxisDirection(planeCol.pPosition, sphereCol.pPosition, point - sphereCol.pPosition);
             var overlap = collisionAxis.magnitude - sphereCol.pRadius;
             ResolveCollisionOverlaps(sphereCol, planeCol, collisionAxis, overlap);
-            ApplyImpulses(sphereCol, planeCol, collisionAxis);
+            ApplyImpulses(sphereCol, planeCol, collisionAxis, point);
+
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++
+            var incline = Vector3.Angle(Vector3.up, planeCol.pNormal);
+            var normalForce = sphereCol.pRigidbody.Mass * 9.81f * Mathf.Cos(incline);
+            var coeffFriction = sphereCol.pRigidbody.CoeffOfFrict;
+            var friction = coeffFriction * normalForce;
+            sphereCol.pRigidbody.AddForce(friction * -sphereCol.pRigidbody.Velocity.normalized);
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
 
             return true;
         }
@@ -87,7 +102,7 @@ public static class PSI_PhysicsUtils {
             var collisionAxis = CorrectCollisionAxisDirection(boxCol.pPosition, sphereCol.pPosition, collisionVector);
             float overlap = collisionVector.magnitude - sphereCol.pRadius;
             ResolveCollisionOverlaps(sphereCol, boxCol, collisionAxis, overlap);
-            ApplyImpulses(sphereCol, boxCol, collisionAxis);
+            ApplyImpulses(sphereCol, boxCol, collisionAxis, point);
 
             return true;
         }
@@ -130,7 +145,7 @@ public static class PSI_PhysicsUtils {
         {
             var collisionAxis = CorrectCollisionAxisDirection(col2.pPosition, col1.pPosition, minOverlapAxis);
             ResolveCollisionOverlaps(col1, col2, collisionAxis, minOverlap);
-            ApplyImpulses(col1, col2, collisionAxis);
+            ApplyImpulses(col1, col2, collisionAxis, point);
             return true;
         }
         return false;
@@ -138,7 +153,6 @@ public static class PSI_PhysicsUtils {
 
     public static bool BoxPlaneCollisionOccured(PSI_Collider_Box boxCol, PSI_Collider_Plane planeCol, out Vector3 point)
     {
-        var boxAxes = boxCol.GetAxes();
         var boxVerts = boxCol.GetVertices();
 
         float distToClosestProjectedPoint = float.PositiveInfinity;
@@ -166,7 +180,7 @@ public static class PSI_PhysicsUtils {
         {
             var collisionAxis = CorrectCollisionAxisDirection(intersectingVertex, point, point - intersectingVertex);
             ResolveCollisionOverlaps(boxCol, planeCol, collisionAxis, collisionAxis.magnitude);
-            ApplyImpulses(boxCol, planeCol, collisionAxis);
+            ApplyImpulses(boxCol, planeCol, collisionAxis, point);
             return true;
         }
         return false;
@@ -227,16 +241,16 @@ public static class PSI_PhysicsUtils {
 
     private static void ResolveCollisionOverlaps(PSI_Collider col1, PSI_Collider col2, Vector3 collisionAxis, float overlap)
     {
-        var inverseMass1 = col1.pRigidbody ? 1.0f / col1.pRigidbody.pMass : 0f;
-        var inverseMass2 = col2.pRigidbody ? 1.0f / col2.pRigidbody.pMass : 0f;
+        var inverseMass1 = col1.pRigidbody ? 1.0f / col1.pRigidbody.Mass : 0f;
+        var inverseMass2 = col2.pRigidbody ? 1.0f / col2.pRigidbody.Mass : 0f;
         if (inverseMass1 + inverseMass2 == 0f) return;
 
         var minTranslationVector = -collisionAxis.normalized * Mathf.Abs(overlap);
-        col1.transform.Translate(minTranslationVector * (inverseMass1 / (inverseMass1 + inverseMass2)));
-        col2.transform.Translate(-minTranslationVector * (inverseMass2 / (inverseMass1 + inverseMass2)));
+        col1.transform.Translate(minTranslationVector * (inverseMass1 / (inverseMass1 + inverseMass2)), Space.World);
+        col2.transform.Translate(-minTranslationVector * (inverseMass2 / (inverseMass1 + inverseMass2)), Space.World);
     }
 
-    private static void ApplyImpulses(PSI_Collider col1, PSI_Collider col2, Vector3 collisionAxis)
+    private static void ApplyImpulses(PSI_Collider col1, PSI_Collider col2, Vector3 collisionAxis, Vector3 collisionPoint)
     {
         Vector3[] velocities = new Vector3[] { Vector3.zero, Vector3.zero };
         float[] inverseMasses = new float[] { 0f, 0f };
@@ -248,8 +262,8 @@ public static class PSI_PhysicsUtils {
             if (rbs[j] != null)
             {
                 velocities[j] = rbs[j].Velocity;
-                inverseMasses[j] = 1.0f / rbs[j].pMass;
-                coeffsOfRes[j] = rbs[j].pCoeffOfRest;
+                inverseMasses[j] = 1.0f / rbs[j].Mass;
+                coeffsOfRes[j] = rbs[j].CoeffOfRest;
             }
         }
 
@@ -262,8 +276,16 @@ public static class PSI_PhysicsUtils {
         var i = (-(1.0f + finalCoeffOfRest) * vn) / (inverseMasses[0] + inverseMasses[1]);
         var impulse = -collisionAxis.normalized * i;
 
-        if(rbs[0] != null) rbs[0].Velocity += impulse * inverseMasses[0];
-        if (rbs[1] != null) rbs[1].Velocity += -impulse * inverseMasses[1];
+        if(rbs[0] != null)
+        {
+            rbs[0].ApplyImpulse(impulse);
+            rbs[0].ApplyAngularImpulse(impulse, collisionPoint);
+        }
+        if (rbs[1] != null)
+        {
+            rbs[1].ApplyImpulse(-impulse);
+            rbs[1].ApplyAngularImpulse(impulse, collisionPoint);
+        }
     }
 
     private static Vector3 CorrectCollisionAxisDirection(Vector3 colPoint1, Vector3 colPoint2, Vector3 colAxis)
