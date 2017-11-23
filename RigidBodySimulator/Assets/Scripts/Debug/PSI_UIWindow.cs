@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public enum UIWindowType
 {
-    Settings, Transform, Rigidbody
+    Settings, Transform, Rigidbody, Controls, Collider
 }
 
 [System.Serializable]
@@ -15,6 +15,8 @@ public struct WindowInputField { public string key; public InputField value; }
 public struct WindowSlider { public string key; public Slider value; }
 [System.Serializable]
 public struct WindowToggle { public string key; public Toggle value; }
+[System.Serializable]
+public struct WindowText { public string key; public Text value; }
 
 public class PSI_UIWindow : PSI_UIDraggable {
 
@@ -32,6 +34,8 @@ public class PSI_UIWindow : PSI_UIDraggable {
     private WindowSlider[] Sliders;
     [SerializeField]
     private WindowToggle[] Toggles;
+    [SerializeField]
+    private WindowText[] Text;
 
     public UIWindowType pType { get { return Type; } }
 
@@ -87,7 +91,7 @@ public class PSI_UIWindow : PSI_UIDraggable {
             slider.value.value = slider.value.minValue;
     }
 
-    public string GetSetContentValue(string key, string value = "")
+    public string GetSetContentValue(string key, string value = "", bool overrideValue = false)
     {
         // Input fields.
         foreach (var inputField in InputFields)
@@ -106,13 +110,36 @@ public class PSI_UIWindow : PSI_UIDraggable {
 
         // Sliders.
         foreach (var slider in Sliders)
+        {
             if (slider.key == key)
+            {
+                if (overrideValue)
+                    slider.value.value = float.Parse(value);
                 return slider.value.value.ToString();
+            }
+        }
 
         // Toggles.
         foreach (var toggle in Toggles)
+        {
             if (toggle.key == key)
+            {
+                if (overrideValue)
+                    toggle.value.isOn = bool.Parse(value);
                 return toggle.value.isOn.ToString();
+            }
+        }
+
+        // Text.
+        foreach (var text in Text)
+        {
+            if (text.key == key)
+            {
+                if (overrideValue)
+                    text.value.text = value;
+                return text.value.text;
+            }
+        }
 
         return value;
     }

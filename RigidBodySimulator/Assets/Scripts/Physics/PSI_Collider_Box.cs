@@ -71,6 +71,9 @@ public class PSI_Collider_Box : PSI_Collider {
 
     protected override void DrawCollider(DrawMode mode)
     {
+        var originalScale = ColliderScale;
+        ColliderScale *= 1.005f;
+
         var verts = GetVertices();
 
         // Drawing the edges.
@@ -93,8 +96,6 @@ public class PSI_Collider_Box : PSI_Collider {
             DrawLine(verts[1 + i * 3], verts[6 - i * 3], mode);
         }
 
-        //var axis = GetAxis();
-        //for (int i = 0; i < 3; i++)
-        //    DrawLine(pPosition, pPosition + axis[i] * 3, mode);
+        ColliderScale = originalScale;
     }
 }

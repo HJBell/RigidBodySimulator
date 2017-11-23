@@ -10,6 +10,12 @@ public class PSI_DebugManager : MonoBehaviour {
     private Image ColPointMarkerPrefab;
     [SerializeField]
     private int ColPointMarkerPoolSize = 20;
+    [SerializeField]
+    private Transform RampTransform;
+    [SerializeField]
+    private Transform ObjectSpawnPoint;
+    [SerializeField]
+    private Vector3 SpawnPointVolume = Vector3.one;
 
     private List<PSI_SelectableObject> mSelectableObjects = new List<PSI_SelectableObject>();
     private PSI_SelectableObject mSelectedObject;
@@ -18,6 +24,8 @@ public class PSI_DebugManager : MonoBehaviour {
     private bool mHighlightCollisions = false;
     private List<Image> mColPointMarkerPool = new List<Image>();
     private int mColPointMarkerIndex = 0;
+    private bool mNewSelectedObject = false;
+    private float mRampAngle = 25f;
 
 
     //----------------------------------------Unity Functions----------------------------------------
@@ -81,6 +89,36 @@ public class PSI_DebugManager : MonoBehaviour {
             if (listObj != obj)
                 listObj.Deselect();
         mSelectedObject = obj;
+        mNewSelectedObject = true;
+    }
+
+    public void SpawnSphere()
+    {   
+        Instantiate(Resources.Load("Res_PhysicsSphere"), GenerateSpawnPoint(), Quaternion.identity);
+    }
+
+    public void SpawnCube()
+    {
+        Instantiate(Resources.Load("Res_PhysicsCube"), GenerateSpawnPoint(), Quaternion.identity);
+    }
+
+    public void ClearObjects()
+    {
+        ObjectSelected(null);
+
+        List<PSI_SelectableObject> objectsToSave = new List<PSI_SelectableObject>();
+
+        foreach (var listObj in mSelectableObjects)
+            if (!listObj.GetComponent<PSI_Rigidbody>())
+                objectsToSave.Add(listObj);
+
+        foreach (var obj in FindObjectsOfType<PSI_Rigidbody>())
+            Destroy(obj.gameObject);
+
+        mSelectableObjects.Clear();
+
+        foreach (var objToSave in objectsToSave)
+            mSelectableObjects.Add(objToSave);
     }
 
 
@@ -91,12 +129,21 @@ public class PSI_DebugManager : MonoBehaviour {
         var settingsWindow = mTaskbar.GetWindow(UIWindowType.Settings);
         var transformWindow = mTaskbar.GetWindow(UIWindowType.Transform);
         var rigidbodyWindow = mTaskbar.GetWindow(UIWindowType.Rigidbody);
+        var colliderWindow = mTaskbar.GetWindow(UIWindowType.Collider);
 
         float timeScale = Time.timeScale;
         float.TryParse(settingsWindow.GetSetContentValue("TimeScale"), out timeScale);
         Time.timeScale = timeScale;
 
         bool.TryParse(settingsWindow.GetSetContentValue("HighlightCollisions"), out mHighlightCollisions);
+
+        if(RampTransform)
+        {
+            float.TryParse(settingsWindow.GetSetContentValue("RampAngle"), out mRampAngle);
+            var rampRot = RampTransform.eulerAngles;
+            rampRot.z = -mRampAngle;
+            RampTransform.eulerAngles = rampRot;
+        }
 
         if (mSelectedObject != null)
         {
@@ -139,25 +186,43 @@ public class PSI_DebugManager : MonoBehaviour {
                 rigidbody.Mass = mass;
 
                 float coeffRest = rigidbody.CoeffOfRest;
-                float.TryParse(rigidbodyWindow.GetSetContentValue("CoeffRest"), out coeffRest);
+                float.TryParse(rigidbodyWindow.GetSetContentValue("CoeffRest", coeffRest.ToString(), mNewSelectedObject), out coeffRest);
                 rigidbody.CoeffOfRest = coeffRest;
 
                 float coeffFrict = rigidbody.CoeffOfFrict;
-                float.TryParse(rigidbodyWindow.GetSetContentValue("CoeffFrict"), out coeffFrict);
+                float.TryParse(rigidbodyWindow.GetSetContentValue("CoeffFrict", coeffFrict.ToString(), mNewSelectedObject), out coeffFrict);
                 rigidbody.CoeffOfFrict = coeffFrict;
 
-                bool.TryParse(rigidbodyWindow.GetSetContentValue("UseGravity"), out rigidbody.UseGravity);
+                bool.TryParse(rigidbodyWindow.GetSetContentValue("UseGravity", rigidbody.UseGravity.ToString(), mNewSelectedObject), out rigidbody.UseGravity);
             }
             else
             {
                 rigidbodyWindow.ResetContent();
+            }
+
+            if(mSelectedObject.GetComponent<PSI_Collider>())
+            {
+                var col = mSelectedObject.GetComponent<PSI_Collider>();
+
+                colliderWindow.GetSetContentValue("ColType", col.pType.ToString(), true);
+
+                var colScale = col.ColliderScale;
+                float.TryParse(colliderWindow.GetSetContentValue("ColScale", colScale.ToString(), mNewSelectedObject), out colScale);
+                col.ColliderScale = colScale;
+            }
+            else
+            {
+                colliderWindow.ResetContent();
             }
         }
         else
         {
             transformWindow.ResetContent();
             rigidbodyWindow.ResetContent();
+            colliderWindow.ResetContent();
         }
+
+        mNewSelectedObject = false;
     }
 
     private void BuildCollisionPointMarkerPool()
@@ -167,6 +232,7 @@ public class PSI_DebugManager : MonoBehaviour {
         {
             var obj = Instantiate(ColPointMarkerPrefab);
             obj.transform.SetParent(canvas.transform);
+            obj.transform.position = Vector3.one * 9999999f;
             obj.transform.SetAsFirstSibling();
             mColPointMarkerPool.Add(obj);
         }
@@ -181,13 +247,24 @@ public class PSI_DebugManager : MonoBehaviour {
 
     private void PlaceCollisionPointMarker(Vector3 worldPos)
     {
+        if (Vector3.Dot(Camera.main.transform.forward, worldPos - Camera.main.transform.position) <= 0f) return;
+        
         var screenPos = Camera.main.WorldToScreenPoint(worldPos);
         var marker = mColPointMarkerPool[mColPointMarkerIndex];
 
         marker.enabled = true;
         marker.transform.position = new Vector3(screenPos.x, screenPos.y);
-        marker.transform.localScale = Vector3.one / Vector3.Distance(Camera.main.transform.position, worldPos);
+        marker.transform.localScale = Vector3.one / Mathf.Max(1f, Vector3.Distance(Camera.main.transform.position, worldPos));
 
         mColPointMarkerIndex = Mathf.Clamp(mColPointMarkerIndex+1, 0, mColPointMarkerPool.Count - 1);
+    }
+
+    private Vector3 GenerateSpawnPoint()
+    {
+        Vector3 spawnPoint = ObjectSpawnPoint.position;
+        spawnPoint.x += Random.Range(-0.5f, 0.5f) * SpawnPointVolume.x;
+        spawnPoint.y += Random.Range(-0.5f, 0.5f) * SpawnPointVolume.y;
+        spawnPoint.z += Random.Range(-0.5f, 0.5f) * SpawnPointVolume.z;
+        return spawnPoint;
     }
 }

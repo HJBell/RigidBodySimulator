@@ -31,11 +31,11 @@ public class PSI_Collider_Plane : PSI_Collider {
         return vertices;
     }
 
-    public bool PosIsWithinPlaneBounds(Vector3 pos, out Vector3 relativePointOnPlane)
+    public bool PosIsWithinPlaneBounds(Vector3 pos, out float distanceToPlane)
     {
         // Projecting the position onto the plane.
-        float distToProjectedPoint = Vector3.Dot(pNormal, (pos - pPosition));
-        relativePointOnPlane = pos - distToProjectedPoint * pNormal;
+        distanceToPlane = Vector3.Dot(pNormal, (pos - pPosition));
+        var relativePointOnPlane = pos - distanceToPlane * pNormal;
 
         // Generate 4 triangles between the corners of the plane and the projected point.
         var verts = GetVertices();
@@ -68,6 +68,8 @@ public class PSI_Collider_Plane : PSI_Collider {
     protected override void DrawCollider(DrawMode mode)
     {
         var verts = GetVertices();
+        for(int i = 0; i < verts.Length; i++)
+            verts[i] += pNormal.normalized * 0.005f;
         DrawLine(verts[0], verts[1], mode);
         DrawLine(verts[1], verts[2], mode);
         DrawLine(verts[2], verts[3], mode);
