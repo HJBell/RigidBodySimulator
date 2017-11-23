@@ -148,10 +148,15 @@ public class PSI_DebugManager : MonoBehaviour {
 
                 bool.TryParse(rigidbodyWindow.GetSetContentValue("UseGravity"), out rigidbody.UseGravity);
             }
+            else
+            {
+                rigidbodyWindow.ResetContent();
+            }
         }
         else
         {
             transformWindow.ResetContent();
+            rigidbodyWindow.ResetContent();
         }
     }
 

@@ -68,11 +68,11 @@ public class PSI_Rigidbody : MonoBehaviour {
 
     public void ApplyAngularImpulse(Vector3 impulse, Vector3 worldPos)
     {
-        //var inertiaTensor = CalculateInertiaTensor();
-        //var inverse = inertiaTensor.inverse;
-        //var cross = Vector3.Cross(impulse, worldPos - this.transform.position);
-        //var velChange = inverse.MultiplyVector(cross);
-        //AngularVelocity += velChange;
+        var inertiaTensor = CalculateInertiaTensor();
+        var inverse = inertiaTensor.inverse;
+        var cross = Vector3.Cross(impulse, worldPos - this.transform.position);
+        var velChange = inverse.MultiplyVector(cross);
+        AngularVelocity += velChange;
     }
 
 
