@@ -16,6 +16,8 @@ public class PSI_Rigidbody : MonoBehaviour {
     public float CoeffOfFrict = 0.5f;
     public bool UseGravity = true;
 
+    private float mAngularRestingStateCutoff = 20f;
+
     private Vector3 mForceThisFrame = Vector3.zero;
     private Vector3 mTorqueThisFrame = Vector3.zero;
 
@@ -43,9 +45,15 @@ public class PSI_Rigidbody : MonoBehaviour {
         this.Velocity += acceleration * Time.deltaTime;
         Velocity += mImpulseThisFrame;
 
-        // Moving the rigidbody based on its velocity and angular velocity.
-        this.transform.Rotate(this.AngularVelocity * Time.deltaTime, Space.World);
-        this.transform.Translate(this.Velocity * Time.deltaTime, Space.World);
+        // Applying the linear velocity to the body if 
+        // it is large enough to not be in a resting state.
+        if (Velocity.magnitude > 9.81f * Time.deltaTime)
+            this.transform.Translate(this.Velocity * Time.deltaTime, Space.World);
+
+        // Applying the angular velocity to the body if 
+        // it is large enough to not be in a resting state.
+        if (AngularVelocity.magnitude > mAngularRestingStateCutoff)
+            this.transform.Rotate(this.AngularVelocity * Time.deltaTime, Space.World);
 
         // Reseting the per frame variables.
         mTorqueThisFrame = Vector3.zero;
