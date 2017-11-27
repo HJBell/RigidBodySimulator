@@ -2,12 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct ImpulseResult
-{
-    public Vector3 Impulse1;
-    public Vector3 Impulse2;
-}
-
 public static class PSI_PhysicsUtils {
 
 

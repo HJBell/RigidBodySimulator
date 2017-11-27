@@ -32,6 +32,7 @@ public class PSI_Collider_Plane : PSI_Collider {
 
     public bool PosIsWithinPlaneBounds(Vector3 pos, out float distanceToPlane)
     {
+        UpdatePlane();
         return PSI_PhysicsUtils.PointProjectsOntoPlane(mPlane, pos, out distanceToPlane);
     }
 
