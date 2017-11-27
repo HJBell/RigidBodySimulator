@@ -129,74 +129,56 @@ public static class PSI_PhysicsUtils {
         if (CheckForOverlapUsingSAT(axesToCheck, col2Verts, col1Verts, out minOverlapAxis, out minOverlap) ||
             CheckForOverlapUsingSAT(axesToCheck, col1Verts, col2Verts, out minOverlapAxis, out minOverlap))
         {
+            var facePlanes1 = col1.GetFacePlanes();
+            var facePlanes2 = col2.GetFacePlanes();
 
-            //float minDist = float.PositiveInfinity;
-            //foreach(var vert in col1Verts)
-            //{
-            //    var pointOnBox = col2.GetClosestPointOnBox(vert);
-            //    var dist = Vector3.Distance(vert, pointOnBox);
-            //    if (dist < minDist)
-            //    {
-            //        point = vert;
-            //        minDist = dist;
-            //    }
-            //}
-            //foreach (var vert in col2Verts)
-            //{
-            //    var pointOnBox = col1.GetClosestPointOnBox(vert);
-            //    var dist = Vector3.Distance(vert, pointOnBox);
-            //    if (dist < minDist)
-            //    {
-            //        point = vert;
-            //        minDist = dist;
-            //    }
-            //}
+            var contactPoints = new List<Vector3>();
+            float contactPointDist = float.PositiveInfinity;
 
+            foreach (var plane in facePlanes1)
+            {
+                foreach (var vert in col2Verts)
+                {
+                    float projectionDist = float.PositiveInfinity;
+                    if (PointProjectsOntoPlane(plane, vert, out projectionDist))
+                    {
+                        projectionDist = Mathf.Abs(projectionDist);
+                        if (Mathf.Abs(projectionDist - contactPointDist) < float.Epsilon)
+                            contactPoints.Add(vert);
+                        else if (projectionDist < contactPointDist)
+                        {
+                            contactPoints.Clear();
+                            contactPoints.Add(vert);
+                            contactPointDist = projectionDist;
+                        }
+                    }
+                }
+            }
 
+            foreach (var plane in facePlanes2)
+            {
+                foreach (var vert in col1Verts)
+                {
+                    float projectionDist = float.PositiveInfinity;
+                    if (PointProjectsOntoPlane(plane, vert, out projectionDist))
+                    {
+                        projectionDist = Mathf.Abs(projectionDist);
+                        if (Mathf.Abs(projectionDist - contactPointDist) < float.Epsilon)
+                            contactPoints.Add(vert);
+                        else if (projectionDist < contactPointDist)
+                        {
+                            contactPoints.Clear();
+                            contactPoints.Add(vert);
+                            contactPointDist = projectionDist;
+                        }
+                    }
+                }
+            }
 
-
-
-            //var closestPoint1 = col1.GetClosestPointOnBox(col1.pPosition + minOverlapAxis.normalized * 100f);
-            //var closestPoint2 = col2.GetClosestPointOnBox(col2.pPosition + -minOverlapAxis.normalized * 100f);
-            //point = (closestPoint1 + closestPoint2) / 2f;
-
-
-
-
-            //var verts = new List<Vector3>();
-            //float minDist = float.NegativeInfinity;
-
-            //foreach(var vert in col1Verts)
-            //{
-            //    var dot = Vector3.Dot(minOverlapAxis - col1.pPosition, vert - col1.pPosition);
-            //    if(dot > minDist)
-            //    {
-            //        verts.Clear();
-            //        verts.Add(vert - col1.pPosition);
-            //        minDist = dot;
-            //    }
-            //    if(Mathf.Abs(minDist - dot) <= Mathf.Epsilon)
-            //    {
-            //        verts.Add(vert - col1.pPosition);
-            //    }
-            //}
-
-            //point = Vector3.zero;
-            //if(verts.Count > 0)
-            //{
-            //    foreach (var vert in verts)
-            //        point += vert;
-            //    point /= verts.Count;
-            //}
-            //point += col1.pPosition;
-
-            //Debug.DrawLine(col1.pPosition, col1.pPosition + minOverlapAxis.normalized * 2f, Color.magenta);
-            //foreach (var vert in verts)
-            //    Debug.DrawLine(vert, point, Color.green);
-
-
-
-
+            point = Vector3.zero;
+            foreach (var contactPoint in contactPoints)
+                point += contactPoint;
+            point /= contactPoints.Count;
 
             var collisionAxis = CorrectCollisionAxisDirection(col2.pPosition, col1.pPosition, minOverlapAxis);
             ResolveCollisionOverlaps(col1, col2, collisionAxis, minOverlap);
@@ -255,8 +237,9 @@ public static class PSI_PhysicsUtils {
         return false;
     }
 
-    //===== Moments Of Inertia =====
 
+    //===== Moments Of Inertia =====
+    
     public static float MomentOfInertiaOfSphere(float mass, float radius)
     {
         return (2f / 5f) * mass * Mathf.Pow(radius, 2);
@@ -272,106 +255,44 @@ public static class PSI_PhysicsUtils {
     }
 
 
+    //============ Misc ============
+
+    public static bool PointProjectsOntoPlane(PSI_Plane plane, Vector3 point, out float projectionDistance)
+    {
+        // Projecting the position onto the plane.
+        projectionDistance = Vector3.Dot(plane.pNormal, (point - plane.Position));
+        var relativePointOnPlane = point - projectionDistance * plane.pNormal;
+
+        // Generate 4 triangles between the corners of the plane and the projected point.
+        var planeVerts = plane.GetVertices();
+        var triangles = new Vector3[4, 3];
+        for (int j = 0; j < 4; j++)
+        {
+            triangles[j, 0] = relativePointOnPlane;
+            triangles[j, 1] = planeVerts[j];
+            triangles[j, 2] = planeVerts[(j == 3) ? 0 : j + 1];
+        }
+
+        // Sum the area of the traingles.
+        float totalTriArea = 0.0f;
+        for (int j = 0; j < 4; j++)
+        {
+            float a = Vector3.Distance(triangles[j, 0], triangles[j, 1]);
+            float b = Vector3.Distance(triangles[j, 1], triangles[j, 2]);
+            float c = Vector3.Distance(triangles[j, 2], triangles[j, 0]);
+            float s = (a + b + c) / 2;
+            totalTriArea += Mathf.Sqrt(s * (s - a) * (s - b) * (s - c));
+        }
+
+        // Returning true if the projected point on the plane is within the plane bounds.
+        return (Mathf.Abs(totalTriArea - plane.pArea) <= 0.01f);
+    }
+
+
     //----------------------------------------Private Functions--------------------------------------
 
     private static bool CheckForOverlapUsingSAT(Vector3[] separatingAxes, Vector3[] verts1, Vector3[] verts2, out Vector3 minOverlapAxis, out float minOverlap)
     {
-        //minOverlapAxis = Vector3.zero;
-        //minOverlap = float.PositiveInfinity;
-
-        //var overlappedVerts = new Vector3[2];
-
-        //for (int i = 0; i < separatingAxes.Length; i++)
-        //{
-        //    float minDot1 = float.MaxValue;
-        //    float maxDot1 = float.MinValue;
-
-        //    float minDot2 = float.MaxValue;
-        //    float maxDot2 = float.MinValue;
-
-        //    Vector3 minDot1Vert = Vector3.zero;
-        //    Vector3 maxDot1Vert = Vector3.zero;
-        //    Vector3 minDot2Vert = Vector3.zero;
-        //    Vector3 maxDot2Vert = Vector3.zero;
-
-        //    Vector3 axis = separatingAxes[i];
-
-        //    if (separatingAxes[i] == Vector3.zero)
-        //        return true;
-
-        //    for (int j = 0; j < verts1.Length; j++)
-        //    {
-        //        float dot = Vector3.Dot((verts1[j]), axis);
-        //        if (dot < minDot1)
-        //        {
-        //            minDot1 = dot;
-        //            minDot1Vert = verts1[j];
-        //        }
-        //        if (dot > maxDot1)
-        //        {
-        //            maxDot1 = dot;
-        //            maxDot1Vert = verts1[j];
-        //        }
-        //    }
-
-        //    for (int j = 0; j < verts2.Length; j++)
-        //    {
-        //        float dot = Vector3.Dot((verts2[j]), axis);
-        //        if (dot < minDot2)
-        //        {
-        //            minDot2 = dot;
-        //            minDot2Vert = verts2[j];
-        //        }
-        //        if (dot > maxDot2)
-        //        {
-        //            maxDot2 = dot;
-        //            maxDot2Vert = verts2[j];
-        //        }
-        //    }
-
-        //    float overlap = maxDot2 - minDot1;
-        //    Vector3 vert1 = maxDot2Vert;
-        //    Vector3 vert2 = minDot1Vert;
-        //    if (minDot1 < minDot2)
-        //    {
-        //        if (maxDot1 < minDot2) overlap = 0f;
-        //        else overlap = maxDot1 - minDot2;
-        //        vert1 = minDot1Vert;
-        //        vert2 = minDot2Vert;
-        //    }
-        //    if (maxDot2 < minDot1)
-        //    {
-        //        overlap = 0f;
-        //        vert1 = maxDot2Vert;
-        //        vert2 = minDot1Vert;
-        //    }
-
-        //    if (overlap < minOverlap)
-        //    {
-        //        minOverlap = overlap;
-        //        minOverlapAxis = separatingAxes[i];
-        //        overlappedVerts[0] = vert1;
-        //        overlappedVerts[1] = vert2;
-        //    }
-
-        //    if (overlap <= 0) return false;
-        //}
-
-        //if(overlappedVerts.Length == 2)
-        //{
-        //    Debug.DrawLine(overlappedVerts[0], overlappedVerts[1]);
-        //}
-
-
-        //return true;
-
-
-
-
-
-
-
-
         minOverlapAxis = Vector3.zero;
         minOverlap = float.PositiveInfinity;
 

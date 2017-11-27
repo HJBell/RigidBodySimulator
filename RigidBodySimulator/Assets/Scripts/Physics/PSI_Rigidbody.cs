@@ -16,7 +16,7 @@ public class PSI_Rigidbody : MonoBehaviour {
     public float CoeffOfFrict = 0.5f;
     public bool UseGravity = true;
 
-    private float mAngularRestingStateCutoff = 20f;
+    private float mAngularRestingStateCutoff = 30f;
 
     private Vector3 mForceThisFrame = Vector3.zero;
     private Vector3 mTorqueThisFrame = Vector3.zero;

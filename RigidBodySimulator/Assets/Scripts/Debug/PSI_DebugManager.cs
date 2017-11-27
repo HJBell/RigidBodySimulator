@@ -11,6 +11,8 @@ public class PSI_DebugManager : MonoBehaviour {
     [SerializeField]
     private int ColPointMarkerPoolSize = 20;
     [SerializeField]
+    private float ColPointMarkerScale = 1f;
+    [SerializeField]
     private Transform RampTransform;
     [SerializeField]
     private Transform ObjectSpawnPoint;
@@ -61,8 +63,8 @@ public class PSI_DebugManager : MonoBehaviour {
             var collisionData = mPhysicsManager.GetCollisionData();
             foreach (var collision in collisionData)
             {
-                collision.col1.UseDebugColour();
-                collision.col2.UseDebugColour();
+                //collision.col1.UseDebugColour();
+                //collision.col2.UseDebugColour();
                 PlaceCollisionPointMarker(collision.point);
             }
         }
@@ -254,7 +256,7 @@ public class PSI_DebugManager : MonoBehaviour {
 
         marker.enabled = true;
         marker.transform.position = new Vector3(screenPos.x, screenPos.y);
-        marker.transform.localScale = Vector3.one / Mathf.Max(1f, Vector3.Distance(Camera.main.transform.position, worldPos));
+        marker.transform.localScale = (Vector3.one * ColPointMarkerScale) / Mathf.Max(1f, Vector3.Distance(Camera.main.transform.position, worldPos));
 
         mColPointMarkerIndex = Mathf.Clamp(mColPointMarkerIndex+1, 0, mColPointMarkerPool.Count - 1);
     }

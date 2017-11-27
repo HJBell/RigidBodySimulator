@@ -66,6 +66,18 @@ public class PSI_Collider_Box : PSI_Collider {
         return closestPoint;
     }
 
+    public PSI_Plane[] GetFacePlanes()
+    {
+        var facePlanes = new PSI_Plane[6];
+        facePlanes[0] = new PSI_Plane(pPosition - transform.right * pSize.x * 0.5f, this.transform.rotation * Quaternion.Euler(0, 0, 90), new Vector2(pSize.y, pSize.z));
+        facePlanes[1] = new PSI_Plane(pPosition - transform.up * pSize.y * 0.5f, this.transform.rotation * Quaternion.Euler(0, 0, 180), new Vector2(pSize.x, pSize.z));
+        facePlanes[2] = new PSI_Plane(pPosition + transform.right * pSize.x * 0.5f, this.transform.rotation * Quaternion.Euler(0, 0, -90), new Vector2(pSize.y, pSize.z));
+        facePlanes[3] = new PSI_Plane(pPosition + transform.up * pSize.y * 0.5f, this.transform.rotation * Quaternion.Euler(0, 0, 0), new Vector2(pSize.x, pSize.z));
+        facePlanes[4] = new PSI_Plane(pPosition + transform.forward * pSize.z * 0.5f, this.transform.rotation * Quaternion.Euler(90, 0, 0), new Vector2(pSize.x, pSize.y));
+        facePlanes[5] = new PSI_Plane(pPosition - transform.forward * pSize.z * 0.5f, this.transform.rotation * Quaternion.Euler(-90, 0, 0), new Vector2(pSize.x, pSize.y));
+        return facePlanes;
+    }
+
 
     //---------------------------------------Protected Functions-------------------------------------
 
@@ -93,7 +105,7 @@ public class PSI_Collider_Box : PSI_Collider {
             DrawLine(verts[i], verts[5 - i], mode);
             DrawLine(verts[2 + i], verts[7 - i], mode);
             DrawLine(verts[i * 3], verts[7 - i * 3], mode);
-            DrawLine(verts[1 + i * 3], verts[6 - i * 3], mode);
+            DrawLine(verts[1 + i * 4], verts[6 - i * 4], mode);
         }
 
         ColliderScale = originalScale;
