@@ -13,6 +13,8 @@ public class PSI_Collider_Box : PSI_Collider {
     protected override void Awake()
     {
         base.Awake();
+
+        // Setting the collider type.
         this.mType = ColliderType.Box;
     }
 
@@ -20,7 +22,8 @@ public class PSI_Collider_Box : PSI_Collider {
     //----------------------------------------Public Functions---------------------------------------
 
     public Vector3[] GetVertices()
-    {
+    {   
+        // Returning the points at the corners of the box.
         Vector3[] vertices = new Vector3[8];
         vertices[0] = pPosition + this.transform.TransformDirection(new Vector3(-pSize.x / 2, -pSize.y / 2, -pSize.z / 2));
         vertices[1] = pPosition + this.transform.TransformDirection(new Vector3(-pSize.x / 2, -pSize.y / 2, pSize.z / 2));
@@ -35,6 +38,7 @@ public class PSI_Collider_Box : PSI_Collider {
 
     public Vector3[] GetAxes()
     {
+        // Returning the up, right and forward vectors of the box.
         Vector3[] axis = new Vector3[3];
         axis[0] = this.transform.right;
         axis[1] = this.transform.up;
@@ -44,30 +48,32 @@ public class PSI_Collider_Box : PSI_Collider {
 
     public float[] GetExtents()
     {
+        // Getting the size of the box in an array (used for looping).
         return new float[] { pSize.x, pSize.y, pSize.z };
     }
 
     public Vector3 GetClosestPointOnBox(Vector3 point)
     {
+        // Determining the closest point on the 
+        // surface of the box to the given point.
         Vector3 closestPoint;
         Vector3 d = point - pPosition;
         var axes = GetAxes();
         var extents = GetExtents();
-
         closestPoint = pPosition;
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 3; i++)
         {
             float dist = Vector3.Dot(d, axes[i]);
             if (dist > extents[i] * 0.5f) dist = extents[i] * 0.5f;
             if (dist < -extents[i] * 0.5f) dist = -extents[i] * 0.5f;
             closestPoint += dist * axes[i];
         }
-
         return closestPoint;
     }
 
     public PSI_Plane[] GetFacePlanes()
     {
+        // Generating a returning the box faces as planes.
         var facePlanes = new PSI_Plane[6];
         facePlanes[0] = new PSI_Plane(pPosition - transform.right * pSize.x * 0.5f, this.transform.rotation * Quaternion.Euler(0, 0, 90), new Vector2(pSize.y, pSize.z));
         facePlanes[1] = new PSI_Plane(pPosition - transform.up * pSize.y * 0.5f, this.transform.rotation * Quaternion.Euler(0, 0, 180), new Vector2(pSize.x, pSize.z));
@@ -83,6 +89,7 @@ public class PSI_Collider_Box : PSI_Collider {
 
     protected override void DrawCollider(DrawMode mode)
     {
+        // Drawing the collider using the given drawmode.
         var originalScale = ColliderScale;
         ColliderScale *= 1.005f;
 

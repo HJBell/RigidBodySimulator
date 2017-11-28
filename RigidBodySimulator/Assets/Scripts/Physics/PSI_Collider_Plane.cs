@@ -17,8 +17,10 @@ public class PSI_Collider_Plane : PSI_Collider {
     protected override void Awake()
     {
         base.Awake();
-        this.mType = ColliderType.Plane;
         UpdatePlane();
+
+        // Setting the collider type.
+        this.mType = ColliderType.Plane;
     }
 
 
@@ -26,14 +28,17 @@ public class PSI_Collider_Plane : PSI_Collider {
 
     public Vector3[] GetVertices()
     {
+        // Returning the points representing the corners of the plane.
         UpdatePlane();
         return mPlane.GetVertices();
     }
 
     public bool PosIsWithinPlaneBounds(Vector3 pos, out float distanceToPlane)
     {
+        // Determining if a point, when projected onto
+        // the plane, will fall within its extents.
         UpdatePlane();
-        return PSI_PhysicsUtils.PointProjectsOntoPlane(mPlane, pos, out distanceToPlane);
+        return mPlane.PointProjectsOntoPlane(pos, out distanceToPlane);
     }
 
 
@@ -41,6 +46,7 @@ public class PSI_Collider_Plane : PSI_Collider {
 
     protected override void DrawCollider(DrawMode mode)
     {
+        // Drawing the collider using the given drawmode.
         var verts = GetVertices();
         for(int i = 0; i < verts.Length; i++)
             verts[i] += pNormal.normalized * 0.005f;
@@ -57,6 +63,7 @@ public class PSI_Collider_Plane : PSI_Collider {
 
     private void UpdatePlane()
     {
+        // Updating the underlying plane variable.
         mPlane.UpdatePlane(pPosition, this.transform.rotation, pSize);
     }
 }

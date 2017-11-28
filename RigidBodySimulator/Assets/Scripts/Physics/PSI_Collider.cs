@@ -52,27 +52,34 @@ public abstract class PSI_Collider : PSI_SelectableObject {
     protected override void OnEnable()
     {
         base.OnEnable();
-        FindObjectOfType<PSI_PhysicsManager>().AddCollider(this);
         mMeshRenderer = this.GetComponent<MeshRenderer>();
+
+        // Adding the collider to the physics manager.
+        FindObjectOfType<PSI_PhysicsManager>().AddCollider(this);
     }
 
     protected override void OnDisable()
     {
         base.OnEnable();
+
+        // Removing the collider from the physics manager.
         if (FindObjectOfType<PSI_PhysicsManager>())
             FindObjectOfType<PSI_PhysicsManager>().RemoveCollider(this);
     }
 
     protected virtual void LateUpdate()
     {
+        // Drawing the collider debug if it is selected.
         if (mIsSelected) DrawDebug();
 
+        // Fading the collider material colour back from debug to idle.
         mMeshRenderer.material.color = Color.Lerp(IdleColour, DebugColour, mColourFadeTimer);
         mColourFadeTimer = Mathf.Clamp01(mColourFadeTimer - (Time.deltaTime / DebugColourFadeDuration));
     }
 
     protected void OnDrawGizmos()
     {
+        // Draw the collider using the gizmos.
         DrawCollider(DrawMode.Gizmo);
     }
 
@@ -81,11 +88,13 @@ public abstract class PSI_Collider : PSI_SelectableObject {
 
     public void UseDebugColour()
     {
+        // Setting the colour fader to its debug state of 1.
         mColourFadeTimer = 1f;
     }
 
     public void DrawDebug()
     {
+        // Draw the collider using the debug renderer.
         DrawCollider(DrawMode.Debug);
     }
 
@@ -94,12 +103,14 @@ public abstract class PSI_Collider : PSI_SelectableObject {
 
     protected void DrawLine(Vector3 start, Vector3 end, DrawMode mode)
     {
+        // Drawing a line either using the gizmos or debug renderer depending on the draw mode.
         if (mode == DrawMode.Gizmo) Gizmos.DrawLine(start, end);
         else mDebugRenderer.DrawLine(start, end);
     }
 
     protected void DrawWireSphere(Vector3 centre, float radius, DrawMode mode)
     {
+        // Drawing a wire sphere either using the gizmos or debug renderer depending on the draw mode.
         if (mode == DrawMode.Gizmo) Gizmos.DrawWireSphere(centre, radius);
         else mDebugRenderer.DrawWireSphere(centre, radius);
     }

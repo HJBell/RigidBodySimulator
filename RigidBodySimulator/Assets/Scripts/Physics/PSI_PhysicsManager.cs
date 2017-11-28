@@ -20,7 +20,10 @@ public class PSI_PhysicsManager : MonoBehaviour {
 
     private void Update()
     {
+        // Clearing the collision data from the previous frame.
         mCollisionData.Clear();
+
+        // Looping through the colliders in the scene and checking for collisions.
         for (int i = 0; i < mColliders.Count; i++)
             for (int j = i + 1; j < mColliders.Count; j++)
                 CheckForCollision(mColliders[i], mColliders[j]);
@@ -31,18 +34,21 @@ public class PSI_PhysicsManager : MonoBehaviour {
 
     public void AddCollider(PSI_Collider collider)
     {
+        // Adding a new collider to the list of colliders in the scene.
         if (!mColliders.Contains(collider))
             mColliders.Add(collider);
     }
 
     public void RemoveCollider(PSI_Collider collider)
     {
+        // Removing a collider from the list of colliders in the scene.
         if (mColliders.Contains(collider))
             mColliders.Remove(collider);
     }
 
     public List<PSI_Collision> GetCollisionData()
     {
+        // Returning the collision data for this frame.
         return mCollisionData;
     }
 

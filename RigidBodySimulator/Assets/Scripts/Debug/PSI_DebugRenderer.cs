@@ -38,12 +38,14 @@ public class PSI_DebugRenderer : MonoBehaviour {
 
     public void DrawWireSphere(Vector3 centre, float radius)
     {
+        // Adding the sphere to a stack of sphere to be drawn this frame.
         mSphereCentres.Push(centre);
         mSphereRadii.Push(radius+0.005f);
     }
 
     public void DrawLine(Vector3 start, Vector3 end)
     {
+        // Adding the line to a stack of lines to be drawn this frame.
         mLineVerts.Push(start);
         mLineVerts.Push(end);
     }
@@ -53,6 +55,7 @@ public class PSI_DebugRenderer : MonoBehaviour {
 
     private void DrawGLWireSphere(Vector3 centre, float radius, int circleResolution)
     {
+        // Drawing a wire sphere using the Unity GL.
         GL.Begin(GL.LINES);
         for (int i = 0; i < circleResolution-1; i++)
         {
@@ -75,6 +78,7 @@ public class PSI_DebugRenderer : MonoBehaviour {
 
     private void DrawGLLine(Vector3 start, Vector3 end)
     {
+        // Drawing a line using Unity GL.
         GL.Begin(GL.LINES);
         GL.Vertex3(start.x, start.y, start.z);
         GL.Vertex3(end.x, end.y, end.z);

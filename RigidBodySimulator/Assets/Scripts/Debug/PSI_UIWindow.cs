@@ -6,7 +6,7 @@ using UnityEngine.EventSystems;
 
 public enum UIWindowType
 {
-    Settings, Transform, Rigidbody, Controls, Collider
+    Settings, Transform, Rigidbody, Controls, Collider, Spawner
 }
 
 [System.Serializable]

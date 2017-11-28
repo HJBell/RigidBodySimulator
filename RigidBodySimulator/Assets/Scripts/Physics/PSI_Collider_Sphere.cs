@@ -13,6 +13,8 @@ public class PSI_Collider_Sphere : PSI_Collider {
     protected override void Awake()
     {
         base.Awake();
+
+        // Setting the collider type.
         this.mType = ColliderType.Sphere;
     }
 
@@ -21,6 +23,7 @@ public class PSI_Collider_Sphere : PSI_Collider {
 
     protected override void DrawCollider(DrawMode mode)
     {
+        // Drawing the collider using the given drawmode.
         if(mode == DrawMode.Gizmo) Gizmos.DrawWireSphere(pPosition, pRadius);
         else FindObjectOfType<PSI_DebugRenderer>().DrawWireSphere(pPosition, pRadius);
     }

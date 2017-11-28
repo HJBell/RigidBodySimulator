@@ -67,19 +67,23 @@ public class PSI_Rigidbody : MonoBehaviour {
 
     public void AddFrictionAtPoint(Vector3 force, Vector3 worldPos)
     {
+        // Calculating the linear component of the frictional force.
         var linearForceMagnitude = Vector3.Dot(-force.normalized, Velocity.normalized);
         this.mForceThisFrame += force * linearForceMagnitude;
 
+        // Calculating the angular component of the frictional force.
         var torque = Vector3.Cross(worldPos - this.transform.position, force);
         this.mTorqueThisFrame += torque;
     }
 
     public void ApplyImpulseAtPoint(Vector3 impulse, Vector3 worldPos)
     {
+        // Calculating the linear component of the impulse.
         var linearImpulseMagnitude = Vector3.Dot(-impulse.normalized, (worldPos - this.transform.position).normalized);
         var velChange = impulse * linearImpulseMagnitude / Mass;
         mImpulseThisFrame += velChange;
 
+        // Calculating the angular component of the impulse.
         var inertiaTensor = CalculateInertiaTensor();
         var inverse = inertiaTensor.inverse;
         var cross = Vector3.Cross(-impulse, worldPos - this.transform.position);
@@ -92,8 +96,8 @@ public class PSI_Rigidbody : MonoBehaviour {
 
     private Matrix4x4 CalculateInertiaTensor()
     {
+        // Calculating the moment of inertia of the body.
         Vector3 momentOfInertia = Vector3.one;
-
         switch (pCollider.pType)
         {
             case ColliderType.Sphere:
@@ -108,6 +112,7 @@ public class PSI_Rigidbody : MonoBehaviour {
                 return Matrix4x4.identity;
         }
 
+        // Using the moment of inertia to construct the inertia tensor matrix.
         Matrix4x4 inertiaTensor = new Matrix4x4();
         inertiaTensor.m00 = momentOfInertia.x;
         inertiaTensor.m11 = momentOfInertia.y;
@@ -118,6 +123,7 @@ public class PSI_Rigidbody : MonoBehaviour {
 
     private Vector3 CalculateAngularAcceleration(Vector3 torque)
     {
+        // Geting the moment of inertia of the body and using to calculate the accelerating due to torque.
         switch(pCollider.pType)
         {
             case ColliderType.Sphere:

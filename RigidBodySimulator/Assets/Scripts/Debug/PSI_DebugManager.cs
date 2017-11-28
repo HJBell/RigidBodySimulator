@@ -28,6 +28,10 @@ public class PSI_DebugManager : MonoBehaviour {
     private int mColPointMarkerIndex = 0;
     private bool mNewSelectedObject = false;
     private float mRampAngle = 25f;
+    private float mSpawnMass = 1f;
+    private float mSpawnCoeffRest = 0f;
+    private float mSpawnCoeffFrict = 0.5f;
+    private bool mSpawnUseGravity = true;
 
 
     //----------------------------------------Unity Functions----------------------------------------
@@ -96,12 +100,14 @@ public class PSI_DebugManager : MonoBehaviour {
 
     public void SpawnSphere()
     {   
-        Instantiate(Resources.Load("Res_PhysicsSphere"), GenerateSpawnPoint(), Quaternion.identity);
+        //Instantiate(Resources.Load("Res_PhysicsSphere"), GenerateSpawnPoint(), Quaternion.identity);
+        SpawnObject("Res_PhysicsSphere", GenerateSpawnPoint());
     }
 
     public void SpawnCube()
     {
-        Instantiate(Resources.Load("Res_PhysicsCube"), GenerateSpawnPoint(), Quaternion.identity);
+        //Instantiate(Resources.Load("Res_PhysicsCube"), GenerateSpawnPoint(), Quaternion.identity);
+        SpawnObject("Res_PhysicsCube", GenerateSpawnPoint());
     }
 
     public void ClearObjects()
@@ -126,12 +132,26 @@ public class PSI_DebugManager : MonoBehaviour {
 
     //----------------------------------------Private Functions--------------------------------------
 
+    private void SpawnObject(string resPath, Vector3 spawnPoint)
+    {
+        var obj = Instantiate(Resources.Load(resPath), spawnPoint, Quaternion.identity) as GameObject;
+        if(obj.GetComponent<PSI_Rigidbody>())
+        {
+            var rb = obj.GetComponent<PSI_Rigidbody>();
+            rb.Mass = mSpawnMass;
+            rb.CoeffOfRest = mSpawnCoeffRest;
+            rb.CoeffOfFrict = mSpawnCoeffFrict;
+            rb.UseGravity = mSpawnUseGravity;
+        }
+    }
+
     private void UpdateWindowContent()
     {
         var settingsWindow = mTaskbar.GetWindow(UIWindowType.Settings);
         var transformWindow = mTaskbar.GetWindow(UIWindowType.Transform);
         var rigidbodyWindow = mTaskbar.GetWindow(UIWindowType.Rigidbody);
         var colliderWindow = mTaskbar.GetWindow(UIWindowType.Collider);
+        var spawnerWindow = mTaskbar.GetWindow(UIWindowType.Spawner);
 
         float timeScale = Time.timeScale;
         float.TryParse(settingsWindow.GetSetContentValue("TimeScale"), out timeScale);
@@ -139,7 +159,12 @@ public class PSI_DebugManager : MonoBehaviour {
 
         bool.TryParse(settingsWindow.GetSetContentValue("HighlightCollisions"), out mHighlightCollisions);
 
-        if(RampTransform)
+        float.TryParse(spawnerWindow.GetSetContentValue("SpawnMass", mSpawnMass.ToString()), out mSpawnMass);
+        float.TryParse(spawnerWindow.GetSetContentValue("SpawnCoeffRest", mSpawnCoeffRest.ToString()), out mSpawnCoeffRest);
+        float.TryParse(spawnerWindow.GetSetContentValue("SpawnCoeffFrict", mSpawnCoeffFrict.ToString()), out mSpawnCoeffFrict);
+        bool.TryParse(spawnerWindow.GetSetContentValue("SpawnUseGravity", mSpawnUseGravity.ToString()), out mSpawnUseGravity);
+
+        if (RampTransform)
         {
             float.TryParse(settingsWindow.GetSetContentValue("RampAngle"), out mRampAngle);
             var rampRot = RampTransform.eulerAngles;
